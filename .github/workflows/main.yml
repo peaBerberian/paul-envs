@@ -353,7 +353,7 @@ jobs:
           retention-days: 7
 
   build-and-run:
-    name: Build & Run on ${{ matrix.os }} (${{ matrix.arch }})
+    name: Build & Run with ${{ matrix.engine }} on ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -362,9 +362,19 @@ jobs:
           - os: ubuntu-latest
             arch: amd64
             platform: linux/amd64
+            engine: docker
           - os: ubuntu-latest
             arch: arm64
             platform: linux/arm64
+            engine: docker
+          - os: ubuntu-latest
+            arch: amd64
+            platform: linux/amd64
+            engine: podman
+          - os: ubuntu-latest
+            arch: arm64
+            platform: linux/arm64
+            engine: podman
 
     steps:
       - name: Checkout code
@@ -379,29 +389,54 @@ jobs:
       - name: Check go version
         run: go version
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker
+        if: matrix.engine == 'docker'
         uses: docker/setup-buildx-action@v3
         with:
           platforms: ${{ matrix.platform }}
 
-      - name: Set up QEMU (for cross-platform builds)
+      - name: Set up Podman
+        if: matrix.engine == 'podman'
+        run: sudo apt-get install -y podman podman-compose
+
+      - name: Set up QEMU (Docker)
+        if: matrix.engine == 'docker' && matrix.arch == 'arm64'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.platform }}
+      
+      - name: Set up QEMU (Podman)
+        if: matrix.engine == 'podman' && matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+          sudo systemctl restart systemd-binfmt || true
 
       - name: Cache Docker layers
+        if: matrix.engine == 'docker'
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{ matrix.arch }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-buildx-full-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-buildx-full-
             ${{ runner.os }}-${{ matrix.arch }}-buildx-
 
+      - name: Set engine variable
+        run: echo "ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
       - name: Verify Docker installation
+        if: matrix.engine == 'docker'
         shell: bash
         run: |
           docker --version
           docker compose version
+
+      - name: Verify Podman installation
+        if: matrix.engine == 'podman'
+        shell: bash
+        run: |
+          podman-compose --version
 
       - name: Set Up paul-envs
         shell: bash
@@ -432,14 +467,16 @@ jobs:
       - name: Build minimal project
         shell: bash
         env:
-          DOCKER_DEFAULT_PLATFORM: ${{ matrix.platform }}
+          # TODO: More reliable ways may exist than random envs
+          DOCKER_DEFAULT_PLATFORM: ${{ matrix.engine == 'docker' && matrix.platform || '' }}
+          BUILDAH_DEFAULT_PLATFORM: ${{ matrix.engine == 'podman' && matrix.platform || '' }}
         run: |
           echo "Building minimal project for ${{ matrix.platform }}..."
           ./paul-envs build build-minimal
           echo "✓ Build completed successfully"
 
           echo "Verifying built image architecture..."
-          ACTUAL_ARCH=$(docker images -q | head -n 1 | xargs docker image inspect --format '{{.Architecture}}')
+          ACTUAL_ARCH=$($ENGINE images -q | head -n 1 | xargs $ENGINE image inspect --format '{{.Architecture}}')
           echo "Built architecture: $ACTUAL_ARCH"
           EXPECTED_ARCH="${{ matrix.arch }}"
           if [ "$ACTUAL_ARCH" != "$EXPECTED_ARCH" ]; then
@@ -476,7 +513,9 @@ jobs:
       - name: Build Node.js project
         shell: bash
         env:
-          DOCKER_DEFAULT_PLATFORM: ${{ matrix.platform }}
+          # TODO: More reliable ways may exist than random envs
+          DOCKER_DEFAULT_PLATFORM: ${{ matrix.engine == 'docker' && matrix.platform || '' }}
+          BUILDAH_DEFAULT_PLATFORM: ${{ matrix.engine == 'podman' && matrix.platform || '' }}
         run: |
           echo "Building Node.js project..."
           ./paul-envs build build-node
@@ -524,13 +563,6 @@ jobs:
           fi
           echo "✓ Workspace access test passed"
 
-      - name: Clean up Docker resources
-        if: always()
-        run: |
-          echo "Cleaning up Docker containers and images..."
-          docker compose -f compose.yaml down --remove-orphans 2>/dev/null || true
-          docker system prune -f --volumes 2>/dev/null || true
-
       - name: Upload build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -542,18 +574,29 @@ jobs:
           retention-days: 7
 
   full-build:
-    name: Full Build on ${{ matrix.os }} (${{ matrix.arch }})
+    name: Full Build with ${{ matrix.engine }} on ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+
       matrix:
         include:
           - os: ubuntu-latest
             arch: amd64
             platform: linux/amd64
+            engine: docker
           - os: ubuntu-latest
             arch: arm64
             platform: linux/arm64
+            engine: docker
+          - os: ubuntu-latest
+            arch: amd64
+            platform: linux/amd64
+            engine: podman
+          - os: ubuntu-latest
+            arch: arm64
+            platform: linux/arm64
+            engine: podman
 
     steps:
       - name: Checkout code
@@ -568,17 +611,31 @@ jobs:
       - name: Check go version
         run: go version
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker
+        if: matrix.engine == 'docker'
         uses: docker/setup-buildx-action@v3
         with:
           platforms: ${{ matrix.platform }}
 
-      - name: Set up QEMU (for cross-platform builds on Linux)
+      - name: Set up Podman
+        if: matrix.engine == 'podman'
+        run: sudo apt-get install -y podman podman-compose
+
+      - name: Set up QEMU (Docker)
+        if: matrix.engine == 'docker' && matrix.arch == 'arm64'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.platform }}
+      
+      - name: Set up QEMU (Podman)
+        if: matrix.engine == 'podman' && matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+          sudo systemctl restart systemd-binfmt || true
 
       - name: Cache Docker layers
+        if: matrix.engine == 'docker'
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
@@ -586,6 +643,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.arch }}-buildx-full-
             ${{ runner.os }}-${{ matrix.arch }}-buildx-
+
+      - name: Set engine variable
+        run: echo "ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - name: Set Up paul-envs
         shell: bash
@@ -641,14 +701,16 @@ jobs:
       - name: Build full build
         shell: bash
         env:
-          DOCKER_DEFAULT_PLATFORM: ${{ matrix.platform }}
+          # TODO: More reliable ways may exist than random envs
+          DOCKER_DEFAULT_PLATFORM: ${{ matrix.engine == 'docker' && matrix.platform || '' }}
+          BUILDAH_DEFAULT_PLATFORM: ${{ matrix.engine == 'podman' && matrix.platform || '' }}
         run: |
           echo "Building full build for ${{ matrix.platform }}..."
           ./paul-envs build full-build
           echo "✓ Full build completed"
 
           echo "Verifying built image architecture..."
-          ACTUAL_ARCH=$(docker images -q | head -n 1 | xargs docker image inspect --format '{{.Architecture}}')
+          ACTUAL_ARCH=$($ENGINE images -q | head -n 1 | xargs $ENGINE image inspect --format '{{.Architecture}}')
           echo "Built architecture: $ACTUAL_ARCH"
           EXPECTED_ARCH="${{ matrix.arch }}"
           if [ "$ACTUAL_ARCH" != "$EXPECTED_ARCH" ]; then
@@ -987,13 +1049,6 @@ jobs:
           echo "=========================================="
           echo "✓ All tests passed for both bash and fish!"
           echo "=========================================="
-
-      - name: Clean up Docker resources
-        if: always()
-        run: |
-          echo "Cleaning up Docker containers and images..."
-          docker compose -f compose.yaml down --remove-orphans 2>/dev/null || true
-          docker system prune -f --volumes 2>/dev/null || true
 
       - name: Upload build logs on failure
         if: failure()

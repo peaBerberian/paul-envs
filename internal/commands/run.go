@@ -98,7 +98,15 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 	} else if buildInfo == nil {
 		console.Warn("NIL BUILD INFO")
 	} else {
-		needsRebuild, reason, err := filestore.NeedsRebuild(project.ProjectName, buildInfo)
+		currentEngineName := ""
+		engineInfo, err := containerEngine.Info(ctx)
+		if err != nil {
+			console.Warn("Cannot get current container engine info: %s", err)
+		} else {
+			currentEngineName = engineInfo.Name
+		}
+
+		needsRebuild, reason, err := filestore.NeedsRebuild(project.ProjectName, currentEngineName, buildInfo)
 		if err != nil {
 			console.Warn("Cannot check previous build metadata: %s", err)
 		}
