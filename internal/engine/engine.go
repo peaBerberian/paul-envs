@@ -116,10 +116,11 @@ type VolumeInfo struct {
 
 // Create a new `ContainerEngine`, based on what's available right now.
 func New(ctx context.Context) (ContainerEngine, error) {
-	// For now only docker is handled
-	// TODO: other engines
+	if podman, err := newPodman(ctx); err == nil {
+		return podman, nil
+	}
 	if docker, err := newDocker(ctx); err == nil {
 		return docker, nil
 	}
-	return nil, fmt.Errorf("no supported container engine found, please install docker first")
+	return nil, fmt.Errorf("no supported container engine found, please install podman or docker first")
 }

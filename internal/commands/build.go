@@ -42,8 +42,8 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 	defer filestore.RemoveProjectDotfilesDir(name)
 
 	console.Info("Ensuring that the shared cache volume is created...")
-	if err := containerEngine.CreateVolume(ctx, "paulenv-shared-cache"); err != nil {
-		return fmt.Errorf("Failed to create shared volume: %w.", err)
+	if err := ensureSharedCacheVolumeIsCreated(ctx, containerEngine); err != nil {
+		return err
 	}
 
 	console.Info("Building project '%s'...", name)
@@ -94,4 +94,20 @@ func getProjectName(args []string, filestore *files.FileStore, console *console.
 		return "", errors.New("no project name provided")
 	}
 	return name, nil
+}
+
+func ensureSharedCacheVolumeIsCreated(ctx context.Context, containerEngine engine.ContainerEngine) error {
+	volumes, err := containerEngine.ListVolumes(ctx)
+	if err != nil {
+		return fmt.Errorf("Failed to list created volumes: %w.", err)
+	}
+	for _, volume := range volumes {
+		if volume.VolumeName == "paulenv-shared-cache" {
+			return nil
+		}
+	}
+	if err := containerEngine.CreateVolume(ctx, "paulenv-shared-cache"); err != nil {
+		return fmt.Errorf("Failed to create shared volume: %w.", err)
+	}
+	return nil
 }
