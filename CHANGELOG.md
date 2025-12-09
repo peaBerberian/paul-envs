@@ -1,10 +1,10 @@
 # Changelog
 
-## v0.2.0 (Unreleased)
+## v0.2.0 (2025-12-09)
 
 ### Features
 
-- Add `Oh My Posh` prompt
+- Add `Oh My Posh` prompt (due to better support of jujutsu)
 
 ### Bug fixes
 
