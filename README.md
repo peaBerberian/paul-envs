@@ -287,3 +287,4 @@ will be removed when the container is exited).
 - Reference counted container instead of master/slaves
 - Does cache pruning in `clean` actually does anything?
 - ci tests for clean command
+- Add delta Pager diff tool
