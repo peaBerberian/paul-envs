@@ -159,7 +159,7 @@ func (f *FileStore) CreateProjectFiles(
 	envTplData EnvTemplateData,
 	composeTplData ComposeTemplateData,
 ) error {
-	if err := f.ensureCreatedBaseFiles(); err != nil {
+	if err := f.RefreshBaseFiles(); err != nil {
 		return fmt.Errorf("create base files: %w", err)
 	}
 
@@ -218,7 +218,7 @@ func (f *FileStore) CreateProjectFiles(
 }
 
 // Write the base Dockerfile file in the base directory if not already done
-func (f *FileStore) ensureCreatedBaseFiles() error {
+func (f *FileStore) RefreshBaseFiles() error {
 	// Write Dockerfile
 	// TODO:Check if required first?
 	dockerfileData, err := assets.ReadFile("embeds/Dockerfile")

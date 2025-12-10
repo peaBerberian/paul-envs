@@ -33,6 +33,10 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 		return fmt.Errorf("cannot build: %s\nPlease re-create this project.", status)
 	}
 
+	if err = filestore.RefreshBaseFiles(); err != nil {
+		return fmt.Errorf("cannot build: Failed to refresh base build files: %w", err)
+	}
+
 	console.Info("Preparing dotfiles...")
 	tmpDotfilesDir, err := filestore.CreateProjectDotfilesDir(ctx, name)
 	if err != nil {
