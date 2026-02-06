@@ -64,32 +64,34 @@ func ParseAndPrompt(args []string, cons *console.Console, filestor *files.FileSt
 
 // parsedFlags holds raw flag values
 type parsedFlags struct {
-	noPrompt        bool
-	name            string
-	uid             string
-	gid             string
-	username        string
-	shell           string
-	nodeVersion     string
-	rustVersion     string
-	pythonVersion   string
-	goVersion       string
-	enableWasm      bool
-	enableSsh       bool
-	enableSudo      bool
-	gitName         string
-	gitEmail        string
-	installNeovim   bool
-	installStarship bool
-	installOhMyPosh bool
-	installAtuin    bool
-	installMise     bool
-	installZellij   bool
-	installJujutsu  bool
-	installDelta    bool
-	packages        []string
-	ports           []string
-	volumes         []string
+	noPrompt          bool
+	name              string
+	uid               string
+	gid               string
+	username          string
+	shell             string
+	nodeVersion       string
+	rustVersion       string
+	pythonVersion     string
+	goVersion         string
+	enableWasm        bool
+	enableSsh         bool
+	enableSudo        bool
+	gitName           string
+	gitEmail          string
+	installNeovim     bool
+	installStarship   bool
+	installOhMyPosh   bool
+	installAtuin      bool
+	installMise       bool
+	installZellij     bool
+	installJujutsu    bool
+	installDelta      bool
+	installClaudeCode bool
+	installCodex      bool
+	packages          []string
+	ports             []string
+	volumes           []string
 }
 
 func parseFlags(args []string) (*parsedFlags, bool, error) {
@@ -123,6 +125,8 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installZellij, "zellij", false, "Install Zellij")
 	flagset.BoolVar(&p.installJujutsu, "jujutsu", false, "Install Jujutsu")
 	flagset.BoolVar(&p.installDelta, "delta", false, "Install Delta")
+	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
+	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
 
 	// Parse repeatable flags manually
 	filtered := make([]string, 0, len(args))
@@ -239,6 +243,8 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	cfg.InstallZellij = p.installZellij
 	cfg.InstallJujutsu = p.installJujutsu
 	cfg.InstallDelta = p.installDelta
+	cfg.InstallClaudeCode = p.installClaudeCode
+	cfg.InstallCodex = p.installCodex
 
 	// Project name
 	if p.name == "" {
@@ -447,7 +453,7 @@ func hasAnyTool(cfg *config.Config) bool {
 	return cfg.InstallNeovim || cfg.InstallStarship ||
 		cfg.InstallOhMyPosh ||
 		cfg.InstallAtuin || cfg.InstallMise ||
-		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta
+		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta || cfg.InstallClaudeCode || cfg.InstallCodex
 }
 
 func needsExactVersion(version string) bool {
@@ -598,6 +604,8 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  6) Zellij (terminal multiplexer)")
 		cons.WriteLn("  7) Jujutsu (Git-compatible VCS)")
 		cons.WriteLn("  8) Delta (Colored pager for Git and other tools)")
+		cons.WriteLn("  9) Claude Code (LLM tool)")
+		cons.WriteLn("  10) OpenAI's codex (LLM tool)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
@@ -625,6 +633,10 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 				cfg.InstallJujutsu = true
 			case "8":
 				cfg.InstallDelta = true
+			case "9":
+				cfg.InstallClaudeCode = true
+			case "10":
+				cfg.InstallCodex = true
 			case "none":
 				return nil
 			default:
@@ -650,6 +662,8 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallZellij = false
 			cfg.InstallJujutsu = false
 			cfg.InstallDelta = false
+			cfg.InstallClaudeCode = false
+			cfg.InstallCodex = false
 			continue
 		}
 

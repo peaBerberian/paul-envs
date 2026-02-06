@@ -87,14 +87,16 @@ type Config struct {
 	// Tools toggle.
 	// "true" == install it
 	// anything else == don't.
-	InstallNeovim   bool
-	InstallStarship bool
-	InstallOhMyPosh bool
-	InstallAtuin    bool
-	InstallMise     bool
-	InstallZellij   bool
-	InstallJujutsu  bool
-	InstallDelta    bool
+	InstallNeovim     bool
+	InstallStarship   bool
+	InstallOhMyPosh   bool
+	InstallAtuin      bool
+	InstallMise       bool
+	InstallZellij     bool
+	InstallJujutsu    bool
+	InstallDelta      bool
+	InstallClaudeCode bool
+	InstallCodex      bool
 
 	Ports    []uint16
 	Volumes  []string
