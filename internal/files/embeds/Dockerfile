@@ -284,6 +284,10 @@ RUN if [ "$INSTALL_ATUIN" = "true" ]; then \
 
 # Install `mise` + languages (optional)
 RUN if [ "$INSTALL_MISE" = "true" ]; then \
+    # TODO: Find out why those are now necessary
+    mkdir -p /home/${USERNAME}/.container-cache/cache && \
+    mkdir -p /home/${USERNAME}/.container-local/state && \
+    mkdir -p /home/${USERNAME}/.container-local/data && \
     curl https://mise.jdx.dev/install.sh | sh && \
     printf "\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n" >> /home/${USERNAME}/.bashrc && \
     printf "\n# Initialize mise\neval \"\$(mise activate bash)\"\n" >> /home/${USERNAME}/.bashrc && \
