@@ -1,4 +1,4 @@
-# Compose File Version: 1.0.0
+# Compose File Version: 1.3.0
 #
 # "Compose file" for your project, which will be relied on when building and
 # running your container alongside the `env file` in the same directory.
@@ -61,6 +61,8 @@ services:
         INSTALL_ZELLIJ: ${INSTALL_ZELLIJ:-false}
         INSTALL_JUJUTSU: ${INSTALL_JUJUTSU:-false}
         INSTALL_DELTA: ${INSTALL_DELTA:-false}
+        INSTALL_CLAUDE_CODE: ${INSTALL_CLAUDE_CODE:-false}
+        INSTALL_CODEX: ${INSTALL_CODEX:-false}
         INSTALL_NODE: ${INSTALL_NODE:-none}
         INSTALL_RUST: ${INSTALL_RUST:-none}
         INSTALL_PYTHON: ${INSTALL_PYTHON:-none}

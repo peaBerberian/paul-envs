@@ -39,6 +39,8 @@ complete -c paul-envs -n "__fish_seen_subcommand_from create" -l mise -d "Instal
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l zellij -d "Install Zellij" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l jujutsu -d "Install Jujutsu" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l delta -d "Install Delta" -f
+complete -c paul-envs -n "__fish_seen_subcommand_from create" -l claude-code -d "Install Claude Code" -f
+complete -c paul-envs -n "__fish_seen_subcommand_from create" -l codex -d "Install OpenAI's codex" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l port -d 'Expose port' -x
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l volume -d 'Add volume' -r
 

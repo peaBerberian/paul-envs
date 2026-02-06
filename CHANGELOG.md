@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.0 (2026-02-06)
+
+### Features
+
+- Add `Claude Code` LLM "agentic" tool
+- Add `codex` LLM "agentic" tool
+
 ## v0.3.0 (2025-12-10)
 
 ### Features

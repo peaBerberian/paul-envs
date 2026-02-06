@@ -29,31 +29,33 @@ var assets embed.FS
 // Data needed to construct a project's `.env` file, which will list environment
 // variables
 type EnvTemplateData struct {
-	ProjectID       string
-	ProjectDestPath string
-	ProjectHostPath string
-	HostUID         string
-	HostGID         string
-	Username        string
-	Shell           string
-	InstallNode     string
-	InstallRust     string
-	InstallPython   string
-	InstallGo       string
-	EnableWasm      string
-	EnableSSH       string
-	EnableSudo      string
-	Packages        string
-	InstallNeovim   string
-	InstallStarship string
-	InstallOhMyPosh string
-	InstallAtuin    string
-	InstallMise     string
-	InstallZellij   string
-	InstallJujutsu  string
-	InstallDelta    string
-	GitName         string
-	GitEmail        string
+	ProjectID         string
+	ProjectDestPath   string
+	ProjectHostPath   string
+	HostUID           string
+	HostGID           string
+	Username          string
+	Shell             string
+	InstallNode       string
+	InstallRust       string
+	InstallPython     string
+	InstallGo         string
+	EnableWasm        string
+	EnableSSH         string
+	EnableSudo        string
+	Packages          string
+	InstallNeovim     string
+	InstallStarship   string
+	InstallOhMyPosh   string
+	InstallAtuin      string
+	InstallMise       string
+	InstallZellij     string
+	InstallJujutsu    string
+	InstallDelta      string
+	InstallClaudeCode string
+	InstallCodex      string
+	GitName           string
+	GitEmail          string
 }
 
 // Data needed to construct a project's `compose.yaml` file, listing mounted

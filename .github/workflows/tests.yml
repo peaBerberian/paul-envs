@@ -311,7 +311,9 @@ jobs:
             --mise \
             --zellij \
             --jujutsu \
-            --delta
+            --delta \
+            --claude-code \
+            --codex
 
           # Verify all tools are enabled
           grep 'INSTALL_NEOVIM="true"' "$PROJECTS_PATH"/test-all-tools/.env
@@ -321,6 +323,8 @@ jobs:
           grep 'INSTALL_ZELLIJ="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_JUJUTSU="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_DELTA="true"' "$PROJECTS_PATH"/test-all-tools/.env
+          grep 'INSTALL_CLAUDE_CODE="true"' "$PROJECTS_PATH"/test-all-tools/.env
+          grep 'INSTALL_CODEX="true"' "$PROJECTS_PATH"/test-all-tools/.env
 
       - name: Test multiple ports
         shell: bash
@@ -381,6 +385,8 @@ jobs:
             --zellij \
             --jujutsu \
             --delta \
+            --claude-code \
+            --codex \
             --git-name "Kitchen Sink" \
             --git-email "sink@kitchen.com" \
             --package ripgrep \

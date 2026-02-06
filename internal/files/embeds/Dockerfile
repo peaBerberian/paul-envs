@@ -90,6 +90,8 @@ ARG INSTALL_MISE=false
 ARG INSTALL_ZELLIJ=false
 ARG INSTALL_JUJUTSU=false
 ARG INSTALL_DELTA=false
+ARG INSTALL_CLAUDE_CODE=false
+ARG INSTALL_CODEX=false
 ARG INSTALL_NODE=none
 ARG INSTALL_RUST=none
 ARG INSTALL_PYTHON=none
@@ -195,6 +197,29 @@ RUN if [ "$INSTALL_DELTA" = "true" ]; then \
     mv delta-${DELTA_VERSION}-${DELTA_ARCH}/delta /usr/local/bin/ && \
     chmod +x /usr/local/bin/delta && \
     rm -rf delta.tar.gz delta-${DELTA_VERSION}-${DELTA_ARCH}; \
+  fi
+
+# Install Claude Code (optional)
+RUN if [ "$INSTALL_CLAUDE_CODE" = "true" ]; then \
+    curl -fsSL https://claude.ai/install.sh | bash; \
+  fi
+
+# Install OpenAI Codex (optional)
+RUN if [ "$INSTALL_CODEX" = "true" ]; then \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        CODEX_ARCH="x86_64-unknown-linux-musl"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        CODEX_ARCH="aarch64-unknown-linux-musl"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    CODEX_VERSION=$(curl -s https://api.github.com/repos/openai/codex/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"//;s/"//') && \
+    curl -L "https://github.com/openai/codex/releases/download/${CODEX_VERSION}/codex-${CODEX_ARCH}.tar.gz" -o codex.tar.gz && \
+    tar -xzf codex.tar.gz && \
+    mv codex-${CODEX_ARCH} /usr/local/bin/codex && \
+    chmod +x /usr/local/bin/codex && \
+    rm codex.tar.gz; \
   fi
 
 # Install Binaryen (optional)

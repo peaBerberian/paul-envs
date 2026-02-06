@@ -6,7 +6,7 @@ import "github.com/peaberberian/paul-envs/internal/utils"
 // TODO: automatize
 var Version = utils.Version{
 	Major: 0,
-	Minor: 3,
+	Minor: 4,
 	Patch: 0,
 }
 
@@ -19,6 +19,7 @@ var Version = utils.Version{
 // # Changes
 // - 1.0.0: Base version
 // - 1.1.0: Added `INSTALL_OH_MY_POSH` env installing the `Oh My Posh` prompt
+// - 1.2.0: Added `INSTALL_CLAUDE_CODE` and `INSTALL_CODEX` envs
 var DockerfileVersion = utils.Version{
 	Major: 1,
 	Minor: 2,

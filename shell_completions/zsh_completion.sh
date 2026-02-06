@@ -56,6 +56,8 @@ _paulenvs() {
                         '--zellij[Install latest Zellij]' \
                         '--jujutsu[Install latest Jujutsu]' \
                         '--delta[Install latest Delta]' \
+                        '--claude-code[Install latest Claude Code]' \
+                        '--codex[Install latest OpenAI's codex]' \
                         '*--package[Additional package from Ubuntu repo]:package:' \
                         '*--port[Expose port]:port:' \
                         '*--volume[Add volume]:volume:_files'
