@@ -199,29 +199,6 @@ RUN if [ "$INSTALL_DELTA" = "true" ]; then \
     rm -rf delta.tar.gz delta-${DELTA_VERSION}-${DELTA_ARCH}; \
   fi
 
-# Install Claude Code (optional)
-RUN if [ "$INSTALL_CLAUDE_CODE" = "true" ]; then \
-    curl -fsSL https://claude.ai/install.sh | bash; \
-  fi
-
-# Install OpenAI Codex (optional)
-RUN if [ "$INSTALL_CODEX" = "true" ]; then \
-    ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
-        CODEX_ARCH="x86_64-unknown-linux-musl"; \
-    elif [ "$ARCH" = "aarch64" ]; then \
-        CODEX_ARCH="aarch64-unknown-linux-musl"; \
-    else \
-        echo "Unsupported architecture: $ARCH" && exit 1; \
-    fi && \
-    CODEX_VERSION=$(curl -s https://api.github.com/repos/openai/codex/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"//;s/"//') && \
-    curl -L "https://github.com/openai/codex/releases/download/${CODEX_VERSION}/codex-${CODEX_ARCH}.tar.gz" -o codex.tar.gz && \
-    tar -xzf codex.tar.gz && \
-    mv codex-${CODEX_ARCH} /usr/local/bin/codex && \
-    chmod +x /usr/local/bin/codex && \
-    rm codex.tar.gz; \
-  fi
-
 # Install Binaryen (optional)
 RUN if [ "$ENABLE_WASM" = "true" ]; then \
     ARCH=$(uname -m) && \
@@ -241,6 +218,32 @@ RUN if [ "$ENABLE_WASM" = "true" ]; then \
   fi
 
 USER ${USERNAME}
+
+# Install Claude Code (optional)
+# Must run as user to avoid permission issues with home directory
+RUN if [ "$INSTALL_CLAUDE_CODE" = "true" ]; then \
+    curl -fsSL https://claude.ai/install.sh | bash; \
+  fi
+
+# Install OpenAI Codex (optional)
+# Note: This assumes codex binary exists. If it doesn't, this will fail gracefully.
+RUN if [ "$INSTALL_CODEX" = "true" ]; then \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        CODEX_ARCH="x86_64-unknown-linux-musl"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        CODEX_ARCH="aarch64-unknown-linux-musl"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    CODEX_VERSION=$(curl -s https://api.github.com/repos/openai/codex/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"//;s/"//') && \
+    curl -L "https://github.com/openai/codex/releases/download/${CODEX_VERSION}/codex-${CODEX_ARCH}.tar.gz" -o /tmp/codex.tar.gz && \
+    tar -xzf /tmp/codex.tar.gz -C /tmp && \
+    mkdir -p /home/${USERNAME}/.local/bin && \
+    mv /tmp/codex-${CODEX_ARCH} /home/${USERNAME}/.local/bin/codex && \
+    chmod +x /home/${USERNAME}/.local/bin/codex && \
+    rm /tmp/codex.tar.gz; \
+  fi
 
 # Add tool initialization lines BEFORE copying user configs
 # This ensures they're present if user doesn't provide custom configs
@@ -284,10 +287,6 @@ RUN if [ "$INSTALL_ATUIN" = "true" ]; then \
 
 # Install `mise` + languages (optional)
 RUN if [ "$INSTALL_MISE" = "true" ]; then \
-    # TODO: Find out why those are now necessary
-    mkdir -p /home/${USERNAME}/.container-cache/cache && \
-    mkdir -p /home/${USERNAME}/.container-local/state && \
-    mkdir -p /home/${USERNAME}/.container-local/data && \
     curl https://mise.jdx.dev/install.sh | sh && \
     printf "\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n" >> /home/${USERNAME}/.bashrc && \
     printf "\n# Initialize mise\neval \"\$(mise activate bash)\"\n" >> /home/${USERNAME}/.bashrc && \
