@@ -93,6 +93,7 @@ ARG INSTALL_DELTA=false
 ARG INSTALL_OPEN_CODE=false
 ARG INSTALL_CLAUDE_CODE=false
 ARG INSTALL_CODEX=false
+ARG INSTALL_FIREFOX=false
 ARG INSTALL_NODE=none
 ARG INSTALL_RUST=none
 ARG INSTALL_PYTHON=none
@@ -120,6 +121,19 @@ RUN if [ "$ENABLE_SUDO" = "true" ]; then \
 # Install packages the user listed as "supplementary"
 RUN if [ -n "$SUPPLEMENTARY_PACKAGES" ]; then \
     apt-get update && apt-get install -y $SUPPLEMENTARY_PACKAGES && rm -rf /var/lib/apt/lists/*; \
+  fi
+
+# Install Firefox (optional, headless for testing)
+RUN if [ "$INSTALL_FIREFOX" = "true" ]; then \
+    apt-get update && apt-get install -y \
+      software-properties-common \
+    && add-apt-repository -y ppa:mozillateam/ppa \
+    && echo 'Package: *' > /etc/apt/preferences.d/mozilla-firefox \
+    && echo 'Pin: release o=LP-PPA-mozillateam' >> /etc/apt/preferences.d/mozilla-firefox \
+    && echo 'Pin-Priority: 1001' >> /etc/apt/preferences.d/mozilla-firefox \
+    && apt-get update \
+    && apt-get install -y firefox \
+    && rm -rf /var/lib/apt/lists/*; \
   fi
 
 # Install Neovim (optional)

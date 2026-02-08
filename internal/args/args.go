@@ -90,6 +90,7 @@ type parsedFlags struct {
 	installOpenCode   bool
 	installClaudeCode bool
 	installCodex      bool
+	installFirefox    bool
 	packages          []string
 	ports             []string
 	volumes           []string
@@ -129,6 +130,7 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installOpenCode, "open-code", false, "Install Open Code")
 	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
 	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
+	flagset.BoolVar(&p.installFirefox, "firefox", false, "Install Mozilla Firefox")
 
 	// Parse repeatable flags manually
 	filtered := make([]string, 0, len(args))
@@ -248,6 +250,7 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	cfg.InstallOpenCode = p.installOpenCode
 	cfg.InstallClaudeCode = p.installClaudeCode
 	cfg.InstallCodex = p.installCodex
+	cfg.InstallFirefox = p.installFirefox
 
 	// Project name
 	if p.name == "" {
@@ -457,7 +460,8 @@ func hasAnyTool(cfg *config.Config) bool {
 		cfg.InstallOhMyPosh ||
 		cfg.InstallAtuin || cfg.InstallMise ||
 		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta ||
-		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex
+		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex ||
+		cfg.InstallFirefox
 }
 
 func needsExactVersion(version string) bool {
@@ -611,6 +615,7 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  9) opencode (LLM tool)")
 		cons.WriteLn("  10) Claude Code (LLM tool)")
 		cons.WriteLn("  11) OpenAI's codex (LLM tool)")
+		cons.WriteLn("  12) Firefox (web browser)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
@@ -644,6 +649,8 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 				cfg.InstallClaudeCode = true
 			case "11":
 				cfg.InstallCodex = true
+			case "12":
+				cfg.InstallFirefox = true
 			case "none":
 				return nil
 			default:
@@ -672,6 +679,7 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallOpenCode = false
 			cfg.InstallClaudeCode = false
 			cfg.InstallCodex = false
+			cfg.InstallFirefox = false
 			continue
 		}
 
