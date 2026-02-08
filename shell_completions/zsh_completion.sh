@@ -58,7 +58,7 @@ _paulenvs() {
                         '--delta[Install latest Delta]' \
                         '--open-code[Install latest opencode]' \
                         '--claude-code[Install latest Claude Code]' \
-                        '--codex[Install latest OpenAI's codex]' \
+												'--codex[Install latest codex (from OpenAI)]' \
                         '*--package[Additional package from Ubuntu repo]:package:' \
                         '*--port[Expose port]:port:' \
                         '*--volume[Add volume]:volume:_files'

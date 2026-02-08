@@ -161,7 +161,7 @@ RUN if [ "$INSTALL_STARSHIP" = "true" ]; then \
 
 # Install Oh My Posh (optional)
 RUN if [ "$INSTALL_OH_MY_POSH" = "true" ]; then \
-	  curl -s https://ohmyposh.dev/install.sh | bash -s -- -d /usr/local/bin; \
+    curl -s https://ohmyposh.dev/install.sh | bash -s -- -d /usr/local/bin; \
   fi
 
 # Install Jujutsu (optional)
@@ -222,7 +222,7 @@ USER ${USERNAME}
 
 # Install opencode (optional)
 RUN if [ "$INSTALL_OPEN_CODE" = "true" ]; then \
-		curl -fsSL https://opencode.ai/install | bash; \
+    curl -fsSL https://opencode.ai/install | bash; \
     printf "\nexport PATH=\"\$HOME/.opencode/bin:\$PATH\"\n" >> /home/${USERNAME}/.bashrc && \
     if [ "$USER_SHELL" = "fish" ]; then \
       printf "\nset -gx PATH \$HOME/.opencode/bin \$PATH\n" >> /home/${USERNAME}/.config/fish/config.fish; \
