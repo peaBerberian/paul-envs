@@ -312,6 +312,7 @@ jobs:
             --zellij \
             --jujutsu \
             --delta \
+            --open-code \
             --claude-code \
             --codex
 
@@ -323,6 +324,7 @@ jobs:
           grep 'INSTALL_ZELLIJ="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_JUJUTSU="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_DELTA="true"' "$PROJECTS_PATH"/test-all-tools/.env
+          grep 'INSTALL_OPEN_CODE="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_CLAUDE_CODE="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_CODEX="true"' "$PROJECTS_PATH"/test-all-tools/.env
 
@@ -385,6 +387,7 @@ jobs:
             --zellij \
             --jujutsu \
             --delta \
+            --open-code \
             --claude-code \
             --codex \
             --git-name "Kitchen Sink" \

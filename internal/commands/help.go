@@ -71,6 +71,8 @@ Options for create (all optional):
                            (prompted if no tool specified)
   --delta                  Install Delta (Colored pager for e.g. Git)
                            (prompted if no tool specified)
+  --open-code              Install opencode (LLM tool)
+                           (prompted if no tool specified)
   --claude-code            Install Claude Code (LLM tool)
                            (prompted if no tool specified)
   --codex-code             Install OpenAI's codex (LLM tool)
@@ -107,6 +109,7 @@ Full Configuration Example:
     --zellij \
     --jujutsu \
     --delta \
+    --open-code \
     --claude-code \
     --codex \
     --enable-ssh \

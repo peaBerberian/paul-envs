@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0 (Unreleased)
+
+### Features
+
+- Add `opencode` LLM "agentic" tool
+
 ## v0.4.0 (2026-02-06)
 
 ### Features

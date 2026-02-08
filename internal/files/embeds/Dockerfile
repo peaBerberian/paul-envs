@@ -1,4 +1,4 @@
-# Dockerfile - Version: 1.2.0
+# Dockerfile - Version: 1.3.0
 # ===========================
 #
 # This "Dockerfile" sets a basic Ubuntu LTS environment with a shell, the wanted
@@ -90,6 +90,7 @@ ARG INSTALL_MISE=false
 ARG INSTALL_ZELLIJ=false
 ARG INSTALL_JUJUTSU=false
 ARG INSTALL_DELTA=false
+ARG INSTALL_OPEN_CODE=false
 ARG INSTALL_CLAUDE_CODE=false
 ARG INSTALL_CODEX=false
 ARG INSTALL_NODE=none
@@ -219,14 +220,17 @@ RUN if [ "$ENABLE_WASM" = "true" ]; then \
 
 USER ${USERNAME}
 
+# Install opencode (optional)
+RUN if [ "$INSTALL_OPEN_CODE" = "true" ]; then \
+		curl -fsSL https://opencode.ai/install | bash; \
+  fi
+
 # Install Claude Code (optional)
-# Must run as user to avoid permission issues with home directory
 RUN if [ "$INSTALL_CLAUDE_CODE" = "true" ]; then \
     curl -fsSL https://claude.ai/install.sh | bash; \
   fi
 
 # Install OpenAI Codex (optional)
-# Note: This assumes codex binary exists. If it doesn't, this will fail gracefully.
 RUN if [ "$INSTALL_CODEX" = "true" ]; then \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \

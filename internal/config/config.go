@@ -95,6 +95,7 @@ type Config struct {
 	InstallZellij     bool
 	InstallJujutsu    bool
 	InstallDelta      bool
+	InstallOpenCode   bool
 	InstallClaudeCode bool
 	InstallCodex      bool
 

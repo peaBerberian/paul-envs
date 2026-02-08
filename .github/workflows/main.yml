@@ -131,6 +131,7 @@ jobs:
             --zellij \
             --jujutsu \
             --delta \
+            --open-code \
             --claude-code \
             --codex
 
@@ -227,6 +228,7 @@ jobs:
             --zellij \
             --jujutsu \
             --delta \
+            --open-code \
             --claude-code \
             --codex \
             --git-name "Full Test" \
@@ -621,6 +623,7 @@ jobs:
             --zellij \
             --jujutsu \
             --delta \
+            --open-code \
             --claude-code \
             --codex \
             --git-name "Kitchen Sink" \
@@ -743,6 +746,7 @@ jobs:
             test_tool zellij \"Zellij\" || FAILED=1
             test_tool jj \"Jujutsu\" || FAILED=1
             test_tool delta \"Delta\" || FAILED=1
+            test_tool opencode \"opencode\" || FAILED=1
             test_tool claude \"Claude code\" || FAILED=1
             test_tool codex \"OpenAI's codex\" || FAILED=1
             test_tool rg \"RipGrep\" || FAILED=1
@@ -916,6 +920,7 @@ jobs:
             test_tool zellij "Zellij"; or set FAILED 1
             test_tool jj "Jujutsu"; or set FAILED 1
             test_tool delta "Delta"; or set FAILED 1
+            test_tool opencode "opencode"; or set FAILED 1
             test_tool claude "Claude Code"; or set FAILED 1
             test_tool codex "OpenAI codex"; or set FAILED 1
             test_tool rg "RipGrep"; or set FAILED 1

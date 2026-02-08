@@ -87,6 +87,7 @@ type parsedFlags struct {
 	installZellij     bool
 	installJujutsu    bool
 	installDelta      bool
+	installOpenCode   bool
 	installClaudeCode bool
 	installCodex      bool
 	packages          []string
@@ -125,6 +126,7 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installZellij, "zellij", false, "Install Zellij")
 	flagset.BoolVar(&p.installJujutsu, "jujutsu", false, "Install Jujutsu")
 	flagset.BoolVar(&p.installDelta, "delta", false, "Install Delta")
+	flagset.BoolVar(&p.installOpenCode, "open-code", false, "Install Open Code")
 	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
 	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
 
@@ -243,6 +245,7 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	cfg.InstallZellij = p.installZellij
 	cfg.InstallJujutsu = p.installJujutsu
 	cfg.InstallDelta = p.installDelta
+	cfg.InstallOpenCode = p.installOpenCode
 	cfg.InstallClaudeCode = p.installClaudeCode
 	cfg.InstallCodex = p.installCodex
 
@@ -453,7 +456,8 @@ func hasAnyTool(cfg *config.Config) bool {
 	return cfg.InstallNeovim || cfg.InstallStarship ||
 		cfg.InstallOhMyPosh ||
 		cfg.InstallAtuin || cfg.InstallMise ||
-		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta || cfg.InstallClaudeCode || cfg.InstallCodex
+		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta ||
+		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex
 }
 
 func needsExactVersion(version string) bool {
@@ -604,8 +608,9 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  6) Zellij (terminal multiplexer)")
 		cons.WriteLn("  7) Jujutsu (Git-compatible VCS)")
 		cons.WriteLn("  8) Delta (Colored pager for Git and other tools)")
-		cons.WriteLn("  9) Claude Code (LLM tool)")
-		cons.WriteLn("  10) OpenAI's codex (LLM tool)")
+		cons.WriteLn("  9) opencode (LLM tool)")
+		cons.WriteLn("  10) Claude Code (LLM tool)")
+		cons.WriteLn("  11) OpenAI's codex (LLM tool)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
@@ -634,8 +639,10 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			case "8":
 				cfg.InstallDelta = true
 			case "9":
-				cfg.InstallClaudeCode = true
+				cfg.InstallOpenCode = true
 			case "10":
+				cfg.InstallClaudeCode = true
+			case "11":
 				cfg.InstallCodex = true
 			case "none":
 				return nil
@@ -662,6 +669,7 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallZellij = false
 			cfg.InstallJujutsu = false
 			cfg.InstallDelta = false
+			cfg.InstallOpenCode = false
 			cfg.InstallClaudeCode = false
 			cfg.InstallCodex = false
 			continue

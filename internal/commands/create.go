@@ -62,6 +62,7 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 		InstallZellij:     strconv.FormatBool(cfg.InstallZellij),
 		InstallJujutsu:    strconv.FormatBool(cfg.InstallJujutsu),
 		InstallDelta:      strconv.FormatBool(cfg.InstallDelta),
+		InstallOpenCode:   strconv.FormatBool(cfg.InstallOpenCode),
 		InstallClaudeCode: strconv.FormatBool(cfg.InstallClaudeCode),
 		InstallCodex:      strconv.FormatBool(cfg.InstallCodex),
 		GitName:           utils.EscapeEnvValue(cfg.GitName),
