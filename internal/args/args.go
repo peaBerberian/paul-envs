@@ -90,7 +90,6 @@ type parsedFlags struct {
 	installOpenCode   bool
 	installClaudeCode bool
 	installCodex      bool
-	installChrome     bool
 	installFirefox    bool
 	packages          []string
 	ports             []string
@@ -131,7 +130,6 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installOpenCode, "open-code", false, "Install Open Code")
 	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
 	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
-	flagset.BoolVar(&p.installChrome, "chrome", false, "Install Google Chrome (or Chromium on arm)")
 	flagset.BoolVar(&p.installFirefox, "firefox", false, "Install Mozilla Firefox")
 
 	// Parse repeatable flags manually
@@ -252,7 +250,6 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	cfg.InstallOpenCode = p.installOpenCode
 	cfg.InstallClaudeCode = p.installClaudeCode
 	cfg.InstallCodex = p.installCodex
-	cfg.InstallChrome = p.installChrome
 	cfg.InstallFirefox = p.installFirefox
 
 	// Project name
@@ -464,7 +461,7 @@ func hasAnyTool(cfg *config.Config) bool {
 		cfg.InstallAtuin || cfg.InstallMise ||
 		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta ||
 		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex ||
-		cfg.InstallChrome || cfg.InstallFirefox
+		cfg.InstallFirefox
 }
 
 func needsExactVersion(version string) bool {
@@ -618,8 +615,7 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  9) opencode (LLM tool)")
 		cons.WriteLn("  10) Claude Code (LLM tool)")
 		cons.WriteLn("  11) OpenAI's codex (LLM tool)")
-		cons.WriteLn("  12) Google Chrome (web browser) - or Chromium on arm")
-		cons.WriteLn("  13) Firefox (web browser)")
+		cons.WriteLn("  12) Firefox (web browser)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
@@ -654,8 +650,6 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			case "11":
 				cfg.InstallCodex = true
 			case "12":
-				cfg.InstallChrome = true
-			case "13":
 				cfg.InstallFirefox = true
 			case "none":
 				return nil
@@ -685,7 +679,6 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallOpenCode = false
 			cfg.InstallClaudeCode = false
 			cfg.InstallCodex = false
-			cfg.InstallChrome = false
 			cfg.InstallFirefox = false
 			continue
 		}

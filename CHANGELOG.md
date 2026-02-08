@@ -5,7 +5,6 @@
 ### Features
 
 - Add `firefox` web browser
-- Add `chrome` web browser (`chromium` on arm64)
 - Add `opencode` LLM "agentic" tool
 
 ## v0.4.0 (2026-02-06)

@@ -34,7 +34,7 @@ Key features:
 -  **Dev-oriented**: Possibility to opt-in to the installation of many popular
    CLI tools (`neovim`, `atuin`, `mise`, `jujutsu`, `zellij`, `claude code`...)
    as well as many language toolkits (Node.js + npm, Rust + cargo, go, python +
-   pip + venv and WebAssembly tools like binaryen) or even web browsers.
+   pip + venv and WebAssembly tools like binaryen) or even a web browser.
 
 -  **optional SSH**: You can opt-in to ssh access from the host (e.g. for
    relying on your host's GUI editor), just like "devcontainers".

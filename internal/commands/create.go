@@ -65,7 +65,6 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 		InstallOpenCode:   strconv.FormatBool(cfg.InstallOpenCode),
 		InstallClaudeCode: strconv.FormatBool(cfg.InstallClaudeCode),
 		InstallCodex:      strconv.FormatBool(cfg.InstallCodex),
-		InstallChrome:     strconv.FormatBool(cfg.InstallChrome),
 		InstallFirefox:    strconv.FormatBool(cfg.InstallFirefox),
 		GitName:           utils.EscapeEnvValue(cfg.GitName),
 		GitEmail:          utils.EscapeEnvValue(cfg.GitEmail),

@@ -93,7 +93,6 @@ ARG INSTALL_DELTA=false
 ARG INSTALL_OPEN_CODE=false
 ARG INSTALL_CLAUDE_CODE=false
 ARG INSTALL_CODEX=false
-ARG INSTALL_CHROME=false
 ARG INSTALL_FIREFOX=false
 ARG INSTALL_NODE=none
 ARG INSTALL_RUST=none
@@ -122,36 +121,6 @@ RUN if [ "$ENABLE_SUDO" = "true" ]; then \
 # Install packages the user listed as "supplementary"
 RUN if [ -n "$SUPPLEMENTARY_PACKAGES" ]; then \
     apt-get update && apt-get install -y $SUPPLEMENTARY_PACKAGES && rm -rf /var/lib/apt/lists/*; \
-  fi
-
-# Install Chrome/Chromium (optional, headless for testing)
-RUN if [ "$INSTALL_CHROME" = "true" ]; then \
-    ARCH=$(dpkg --print-architecture) && \
-    apt-get update && apt-get install -y \
-      wget \
-      ca-certificates \
-      libwayland-client0 \
-    && if [ "$ARCH" = "amd64" ]; then \
-      apt-get update && apt-get install -y \
-        gnupg && \
-      wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg && \
-      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
-      apt-get update && \
-      apt-get install -y google-chrome-stable; \
-    elif [ "$ARCH" = "arm64" ]; then \
-      apt-get update && apt-get install -y \
-        unzip && \
-      # Google Chrome is not packaged for Linux ARM64 weirdly enough, install chromium instead and alias it, as a band-aid :/ \
-      echo "\033[1;33mWarning: Google Chrome is not available for ARM64. Downloading Chromium from official snapshots.\033[0m" >&2 && \
-      wget -O /tmp/chromium.zip "https://download-chromium.appspot.com/dl/Linux_arm64?type=snapshots" && \
-      unzip -q /tmp/chromium.zip -d /opt/ && \
-      rm /tmp/chromium.zip && \
-      mv /opt/chrome-linux /opt/chromium && \
-      ln -sf /opt/chromium/chrome /usr/local/bin/chromium && \
-      ln -sf /opt/chromium/chrome /usr/local/bin/google-chrome && \
-      echo "\033[1;33mNote: 'google-chrome' and 'chromium' commands will use Chromium on ARM64.\033[0m" >&2; \
-    fi \
-    && rm -rf /var/lib/apt/lists/*; \
   fi
 
 # Install Firefox (optional, headless for testing)

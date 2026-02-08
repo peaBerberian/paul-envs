@@ -77,8 +77,6 @@ Options for create (all optional):
                            (prompted if no tool specified)
   --codex                  Install OpenAI's codex (LLM tool)
                            (prompted if no tool specified)
-  --chrome                 Install Google Chrome (web browser) (Chromium on arm)
-                           (prompted if no tool specified)
   --firefox                Install Mozilla Firefox (web browser)
                            (prompted if no tool specified)
   --package PKG_NAME       Additional Ubuntu package (prompted if not specified, can be repeated)
@@ -116,7 +114,6 @@ Full Configuration Example:
     --open-code \
     --claude-code \
     --codex \
-    --chrome \
     --firefox \
     --enable-ssh \
     --enable-sudo \
