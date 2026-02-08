@@ -77,6 +77,10 @@ Options for create (all optional):
                            (prompted if no tool specified)
   --codex                  Install OpenAI's codex (LLM tool)
                            (prompted if no tool specified)
+  --chrome                 Install Google Chrome (browser)
+                           (prompted if no tool specified)
+  --firefox                Install Mozilla Firefox (browser)
+                           (prompted if no tool specified)
   --package PKG_NAME       Additional Ubuntu package (prompted if not specified, can be repeated)
   --port PORT              Expose container port (prompted if not specified, can be repeated)
   --volume HOST:CONT[:ro]  Mount volume (prompted if not specified, can be repeated)
@@ -112,6 +116,8 @@ Full Configuration Example:
     --open-code \
     --claude-code \
     --codex \
+    --chrome \
+    --firefox \
     --enable-ssh \
     --enable-sudo \
     --git-name "John Doe" \

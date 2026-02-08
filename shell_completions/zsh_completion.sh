@@ -59,6 +59,8 @@ _paulenvs() {
                         '--open-code[Install latest opencode]' \
                         '--claude-code[Install latest Claude Code]' \
 												'--codex[Install latest codex (from OpenAI)]' \
+                        '--chrome[Install Google Chrome]' \
+                        '--firefox[Install Mozilla Firefox]' \
                         '*--package[Additional package from Ubuntu repo]:package:' \
                         '*--port[Expose port]:port:' \
                         '*--volume[Add volume]:volume:_files'

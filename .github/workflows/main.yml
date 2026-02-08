@@ -133,7 +133,9 @@ jobs:
             --delta \
             --open-code \
             --claude-code \
-            --codex
+            --codex \
+            --chrome \
+            --firefox
 
       - name: Test create with WASM and sudo
         shell: bash
@@ -231,6 +233,8 @@ jobs:
             --open-code \
             --claude-code \
             --codex \
+            --chrome \
+            --firefox \
             --git-name "Full Test" \
             --git-email "full@test.com" \
             --package ripgrep \
@@ -626,6 +630,8 @@ jobs:
             --open-code \
             --claude-code \
             --codex \
+            --chrome \
+            --firefox \
             --git-name "Kitchen Sink" \
             --git-email "sink@kitchen.com" \
             --package ripgrep \
@@ -749,6 +755,8 @@ jobs:
             test_tool opencode \"opencode\" || FAILED=1
             test_tool claude \"Claude code\" || FAILED=1
             test_tool codex \"OpenAI's codex\" || FAILED=1
+            test_tool chrome \"Google Chrome\" || FAILED=1
+            test_tool firefox \"Mozilla Firefox\" || FAILED=1
             test_tool rg \"RipGrep\" || FAILED=1
             test_tool fzf \"fzf\" || FAILED=1
             test_tool htop \"htop\" || FAILED=1
@@ -923,6 +931,8 @@ jobs:
             test_tool opencode "opencode"; or set FAILED 1
             test_tool claude "Claude Code"; or set FAILED 1
             test_tool codex "OpenAI codex"; or set FAILED 1
+            test_tool chrome "Google Chrome"; or set FAILED 1
+            test_tool firefox "Mozilla Firefox"; or set FAILED 1
             test_tool rg "RipGrep"; or set FAILED 1
             test_tool fzf "fzf"; or set FAILED 1
             test_tool htop "htop"; or set FAILED 1

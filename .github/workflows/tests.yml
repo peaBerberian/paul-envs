@@ -314,7 +314,9 @@ jobs:
             --delta \
             --open-code \
             --claude-code \
-            --codex
+            --codex \
+            --chrome \
+            --firefox
 
           # Verify all tools are enabled
           grep 'INSTALL_NEOVIM="true"' "$PROJECTS_PATH"/test-all-tools/.env
@@ -327,6 +329,8 @@ jobs:
           grep 'INSTALL_OPEN_CODE="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_CLAUDE_CODE="true"' "$PROJECTS_PATH"/test-all-tools/.env
           grep 'INSTALL_CODEX="true"' "$PROJECTS_PATH"/test-all-tools/.env
+          grep 'INSTALL_CHROME="true"' "$PROJECTS_PATH"/test-all-tools/.env
+          grep 'INSTALL_FIREFOX="true"' "$PROJECTS_PATH"/test-all-tools/.env
 
       - name: Test multiple ports
         shell: bash
@@ -390,6 +394,8 @@ jobs:
             --open-code \
             --claude-code \
             --codex \
+            --chrome \
+            --firefox \
             --git-name "Kitchen Sink" \
             --git-email "sink@kitchen.com" \
             --package ripgrep \

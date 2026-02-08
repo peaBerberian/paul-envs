@@ -93,6 +93,8 @@ ARG INSTALL_DELTA=false
 ARG INSTALL_OPEN_CODE=false
 ARG INSTALL_CLAUDE_CODE=false
 ARG INSTALL_CODEX=false
+ARG INSTALL_CHROME=false
+ARG INSTALL_FIREFOX=false
 ARG INSTALL_NODE=none
 ARG INSTALL_RUST=none
 ARG INSTALL_PYTHON=none
@@ -120,6 +122,32 @@ RUN if [ "$ENABLE_SUDO" = "true" ]; then \
 # Install packages the user listed as "supplementary"
 RUN if [ -n "$SUPPLEMENTARY_PACKAGES" ]; then \
     apt-get update && apt-get install -y $SUPPLEMENTARY_PACKAGES && rm -rf /var/lib/apt/lists/*; \
+  fi
+
+# Install Chrome (optional, headless for testing)
+RUN if [ "$INSTALL_CHROME" = "true" ]; then \
+    apt-get update && apt-get install -y \
+      wget \
+      gnupg \
+      ca-certificates \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*; \
+  fi
+
+# Install Firefox (optional, headless for testing)
+RUN if [ "$INSTALL_FIREFOX" = "true" ]; then \
+    apt-get update && apt-get install -y \
+      software-properties-common \
+    && add-apt-repository -y ppa:mozillateam/ppa \
+    && echo 'Package: *' > /etc/apt/preferences.d/mozilla-firefox \
+    && echo 'Pin: release o=LP-PPA-mozillateam' >> /etc/apt/preferences.d/mozilla-firefox \
+    && echo 'Pin-Priority: 1001' >> /etc/apt/preferences.d/mozilla-firefox \
+    && apt-get update \
+    && apt-get install -y firefox \
+    && rm -rf /var/lib/apt/lists/*; \
   fi
 
 # Install Neovim (optional)

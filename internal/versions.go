@@ -20,7 +20,7 @@ var Version = utils.Version{
 // - 1.0.0: Base version
 // - 1.1.0: Added `INSTALL_OH_MY_POSH` env installing the `Oh My Posh` prompt
 // - 1.2.0: Added `INSTALL_CLAUDE_CODE` and `INSTALL_CODEX` envs
-// - 1.3.0: Added `INSTALL_OPEN_CODE` env
+// - 1.3.0: Added `INSTALL_OPEN_CODE`, `INSTALL_CHROME`, `INSTALL_FIREFOX` envs
 var DockerfileVersion = utils.Version{
 	Major: 1,
 	Minor: 3,

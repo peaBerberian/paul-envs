@@ -41,7 +41,9 @@ complete -c paul-envs -n "__fish_seen_subcommand_from create" -l jujutsu -d "Ins
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l delta -d "Install Delta" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l open-code -d "Install opencode" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l claude-code -d "Install Claude Code" -f
-complete -c paul-envs -n "__fish_seen_subcommand_from create" -l codex -d "Install OpenAI's codex" -f
+complete -c paul-envs -n "__fish_seen_subcommand_from create" -l codex -d "Install OpenAI codex" -f
+complete -c paul-envs -n "__fish_seen_subcommand_from create" -l chrome -d "Install Google Chrome" -f
+complete -c paul-envs -n "__fish_seen_subcommand_from create" -l firefox -d "Install Mozilla Firefox" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l port -d 'Expose port' -x
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l volume -d 'Add volume' -r
 

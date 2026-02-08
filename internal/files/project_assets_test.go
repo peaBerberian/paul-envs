@@ -49,6 +49,8 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 		InstallOpenCode:   "false",
 		InstallClaudeCode: "false",
 		InstallCodex:      "false",
+		InstallChrome:     "false",
+		InstallFirefox:    "false",
 		GitName:           "Test User",
 		GitEmail:          "test@example.com",
 	}
@@ -189,6 +191,8 @@ func TestFileStore_CreateProjectComposeFiles(t *testing.T) {
 		InstallOpenCode:   "false",
 		InstallClaudeCode: "false",
 		InstallCodex:      "false",
+		InstallChrome:     "false",
+		InstallFirefox:    "false",
 		GitName:           "Test User",
 		GitEmail:          "test@example.com",
 	}
