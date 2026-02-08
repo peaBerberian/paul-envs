@@ -223,6 +223,12 @@ USER ${USERNAME}
 # Install opencode (optional)
 RUN if [ "$INSTALL_OPEN_CODE" = "true" ]; then \
 		curl -fsSL https://opencode.ai/install | bash; \
+    printf "\nexport PATH=\"\$HOME/.opencode/bin:\$PATH\"\n" >> /home/${USERNAME}/.bashrc && \
+    if [ "$USER_SHELL" = "fish" ]; then \
+      printf "\nset -gx PATH \$HOME/.opencode/bin \$PATH\n" >> /home/${USERNAME}/.config/fish/config.fish; \
+    elif [ "$USER_SHELL" = "zsh" ]; then \
+      printf "\nexport PATH=\"\$HOME/.opencode/bin:\$PATH\"\n" >> /home/${USERNAME}/.zshrc; \
+    fi; \
   fi
 
 # Install Claude Code (optional)
