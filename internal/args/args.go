@@ -131,7 +131,7 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installOpenCode, "open-code", false, "Install Open Code")
 	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
 	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
-	flagset.BoolVar(&p.installChrome, "chrome", false, "Install Google Chrome")
+	flagset.BoolVar(&p.installChrome, "chrome", false, "Install Google Chrome (or Chromium on arm)")
 	flagset.BoolVar(&p.installFirefox, "firefox", false, "Install Mozilla Firefox")
 
 	// Parse repeatable flags manually
@@ -618,8 +618,8 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  9) opencode (LLM tool)")
 		cons.WriteLn("  10) Claude Code (LLM tool)")
 		cons.WriteLn("  11) OpenAI's codex (LLM tool)")
-		cons.WriteLn("  12) Google Chrome (Browser)")
-		cons.WriteLn("  13) Firefox (Browser)")
+		cons.WriteLn("  12) Google Chrome (web browser) - or Chromium on arm")
+		cons.WriteLn("  13) Firefox (web browser)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
