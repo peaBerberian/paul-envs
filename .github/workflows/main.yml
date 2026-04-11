@@ -736,7 +736,7 @@ jobs:
             test_tool node \"Node.js\" || FAILED=1
             test_tool cargo \"Cargo\" || FAILED=1
             test_tool rustc \"rustc\" || FAILED=1
-            test_tool python \"Python\" || FAILED=1
+            test_tool python3 \"Python\" || FAILED=1
             test_tool go \"Go\" version || FAILED=1
             test_tool wasm-opt \"Binaryen\" || FAILED=1
             test_tool ssh \"ssh\" \"-V\" || FAILED=1
@@ -911,7 +911,7 @@ jobs:
             test_tool node "Node.js"; or set FAILED 1
             test_tool cargo "Cargo"; or set FAILED 1
             test_tool rustc "rustc"; or set FAILED 1
-            test_tool python "Python"; or set FAILED 1
+            test_tool python3 "Python"; or set FAILED 1
             test_tool go "Go" version; or set FAILED 1
             test_tool wasm-opt "Binaryen"; or set FAILED 1
             test_tool ssh "ssh" "-V"; or set FAILED 1
