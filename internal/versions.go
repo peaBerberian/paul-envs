@@ -21,9 +21,10 @@ var Version = utils.Version{
 // - 1.1.0: Added `INSTALL_OH_MY_POSH` env installing the `Oh My Posh` prompt
 // - 1.2.0: Added `INSTALL_CLAUDE_CODE` and `INSTALL_CODEX` envs
 // - 1.3.0: Added `INSTALL_OPEN_CODE`, `INSTALL_FIREFOX` envs
+// - 1.4.0: Added `userns_mode: keep-id` (compose.yml) to align podman-compose with Docker
 var DockerfileVersion = utils.Version{
 	Major: 1,
-	Minor: 3,
+	Minor: 4,
 	Patch: 0,
 }
 

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -63,6 +64,10 @@ func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntr
 
 func (c *PodmanEngine) RunContainer(ctx context.Context, project files.ProjectEntry, args []string) error {
 	cmdArgs := []string{"run", "--rm", "paulenv"}
+	// TODO: Shouldn't we just detect if the caller just intend to run a command (and exit)?
+	if os.Getenv("CI") != "" {
+		cmdArgs = append([]string{"--podman-run-args=--tty=false"}, cmdArgs...)
+	}
 	cmdArgs = append(cmdArgs, args...)
 	cmd, cleanup, err := c.composeCommandContext(ctx, project, cmdArgs...)
 	if err != nil {
@@ -378,27 +383,37 @@ func (c *PodmanEngine) RemoveImage(ctx context.Context, image ImageInfo) error {
 }
 
 func (c *PodmanEngine) composeCommandContext(ctx context.Context, project files.ProjectEntry, args ...string) (*exec.Cmd, func(), error) {
-	overrideFilePath, err := c.createComposeOverride(project)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create Podman compose override: %w", err)
-	}
-
 	cmdArgs := append([]string{}, c.composeCommand[1:]...)
 	cmdArgs = append(cmdArgs,
 		"-f", project.ComposeFilePath,
-		"-f", overrideFilePath,
 		"--env-file", project.EnvFilePath,
 	)
+
+	// TODO: CI too weird as an env, got tired of doing things well
+	var overrideFilePath string
+	if os.Getenv("CI") == "true" || !supportsKeepID() {
+		newCompose, err := c.createComposeUserNsOverride(project)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create Podman compose override: %w", err)
+		}
+		overrideFilePath = newCompose
+	}
+
+	if overrideFilePath != "" {
+		cmdArgs = append(cmdArgs, "-f", overrideFilePath)
+	}
 	cmdArgs = append(cmdArgs, args...)
 	cmd := exec.CommandContext(ctx, c.composeCommand[0], cmdArgs...)
 	cmd.Env = append(os.Environ(), "COMPOSE_PROJECT_NAME=paulenv-"+project.ProjectName)
 	cleanup := func() {
-		_ = os.Remove(overrideFilePath)
+		if overrideFilePath != "" {
+			_ = os.Remove(overrideFilePath)
+		}
 	}
 	return cmd, cleanup, nil
 }
 
-func (c *PodmanEngine) createComposeOverride(project files.ProjectEntry) (string, error) {
+func (c *PodmanEngine) createComposeUserNsOverride(project files.ProjectEntry) (string, error) {
 	overrideDir := filepath.Dir(project.ComposeFilePath)
 	tmpFile, err := os.CreateTemp(overrideDir, "podman-compose-override-*.yaml")
 	if err != nil {
@@ -406,7 +421,9 @@ func (c *PodmanEngine) createComposeOverride(project files.ProjectEntry) (string
 	}
 	defer tmpFile.Close()
 
-	overrideContent := "services:\n  paulenv:\n    userns_mode: keep-id\n"
+	overrideContent := "services:\n  paulenv:\n"
+	overrideContent += "    userns_mode: \"host\"\n"
+	overrideContent += "\nx-podman:\n  in_pod: false\n"
 	if _, err = tmpFile.WriteString(overrideContent); err != nil {
 		_ = os.Remove(tmpFile.Name())
 		return "", err
@@ -465,4 +482,15 @@ func parseCreatedAt(timeStr string) *time.Time {
 		}
 	}
 	return nil
+}
+
+func supportsKeepID() bool {
+	if runtime.GOOS != "linux" {
+		return true
+	}
+	data, err := os.ReadFile("/proc/sys/user/max_user_namespaces")
+	if err != nil {
+		return true
+	}
+	return strings.TrimSpace(string(data)) != "0"
 }

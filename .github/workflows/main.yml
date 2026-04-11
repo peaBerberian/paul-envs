@@ -619,7 +619,12 @@ jobs:
 
       - name: Set up Podman
         if: matrix.engine == 'podman'
-        run: sudo apt-get install -y podman podman-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+          # Sadly Ubuntu's version of podman-compose is bugged for CI purposes
+          # (--tty overriding stuff). Force a more recent one
+          pip install "podman-compose>=1.1.0" --break-system-packages
 
       - name: Set up QEMU (Docker)
         if: matrix.engine == 'docker' && matrix.arch == 'arm64'
