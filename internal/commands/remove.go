@@ -57,7 +57,7 @@ func Remove(ctx context.Context, args []string, filestore *files.FileStore, cons
 		return nil
 	}
 
-	containerEngine, err := engine.New(ctx)
+	containerEngine, err := engine.New(ctx, console)
 	if err != nil {
 		return err
 	}

@@ -18,7 +18,7 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 	default:
 	}
 
-	containerEngine, err := engine.New(ctx)
+	containerEngine, err := engine.New(ctx, console)
 	if err != nil {
 		return err
 	}

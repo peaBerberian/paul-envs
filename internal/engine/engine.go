@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/files"
 )
 
@@ -115,8 +116,16 @@ type VolumeInfo struct {
 }
 
 // Create a new `ContainerEngine`, based on what's available right now.
-func New(ctx context.Context) (ContainerEngine, error) {
-	if podman, err := newPodman(ctx); err == nil {
+func New(ctx context.Context, console *console.Console) (ContainerEngine, error) {
+	podman, podmanErr := newPodman(ctx)
+	_, dockerErr := newDocker(ctx)
+
+	if podmanErr == nil {
+		if dockerErr == nil {
+			// Both are available — warn so the user isn't surprised
+			// TODO:  Set PAUL_ENVS_ENGINE=docker to override.
+			console.Warn("Both Podman and Docker are available; relying on Podman.")
+		}
 		return podman, nil
 	}
 	if docker, err := newDocker(ctx); err == nil {

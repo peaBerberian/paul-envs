@@ -23,7 +23,7 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 		return fmt.Errorf("could not list all projects: %w", err)
 	}
 
-	containerEngine, err := engine.New(ctx)
+	containerEngine, err := engine.New(ctx, console)
 	if err != nil {
 		console.Warn("Could not instantiate container engine: %w", err)
 	}

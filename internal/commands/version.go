@@ -18,7 +18,7 @@ func Version(ctx context.Context, console *console.Console) error {
 
 	console.WriteLn("paul-envs version %d.%d.%d",
 		versions.Version.Major, versions.Version.Minor, versions.Version.Patch)
-	containerEngine, err := engine.New(ctx)
+	containerEngine, err := engine.New(ctx, console)
 	if err != nil {
 		return fmt.Errorf("failed to fetch information on container engine: %w", err)
 	}
