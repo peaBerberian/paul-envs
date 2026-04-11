@@ -481,6 +481,11 @@ func parseCreatedAt(timeStr string) *time.Time {
 			return &parsedTime
 		}
 	}
+	// Not returning an error because callers treat nil as "unknown build time"
+	// rather than a hard failure, but log so format changes don't go unnoticed.
+	// TODO: This is one of the only place where we use Stdout/Stderr instead of console
+	// to fix
+	fmt.Fprintf(os.Stderr, "Debug: could not parse image creation time %q; rebuild detection may be affected\n", timeStr)
 	return nil
 }
 
