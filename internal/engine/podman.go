@@ -422,7 +422,7 @@ func (c *PodmanEngine) createComposeUserNsOverride(project files.ProjectEntry) (
 	defer tmpFile.Close()
 
 	overrideContent := "services:\n  paulenv:\n"
-	overrideContent += "    userns_mode: \"host\"\n"
+	overrideContent += "    userns_mode: \"\"\n"
 	overrideContent += "\nx-podman:\n  in_pod: false\n"
 	if _, err = tmpFile.WriteString(overrideContent); err != nil {
 		_ = os.Remove(tmpFile.Name())
