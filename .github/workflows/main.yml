@@ -363,7 +363,7 @@ jobs:
             arch: amd64
             platform: linux/amd64
             engine: docker
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             arch: arm64
             platform: linux/arm64
             engine: docker
@@ -371,7 +371,7 @@ jobs:
             arch: amd64
             platform: linux/amd64
             engine: podman
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             arch: arm64
             platform: linux/arm64
             engine: podman
@@ -398,19 +398,6 @@ jobs:
       - name: Set up Podman
         if: matrix.engine == 'podman'
         run: sudo apt-get install -y podman podman-compose
-
-      - name: Set up QEMU (Docker)
-        if: matrix.engine == 'docker' && matrix.arch == 'arm64'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.platform }}
-      
-      - name: Set up QEMU (Podman)
-        if: matrix.engine == 'podman' && matrix.arch == 'arm64'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-static
-          sudo systemctl restart systemd-binfmt || true
 
       - name: Cache Docker layers
         if: matrix.engine == 'docker'
@@ -466,10 +453,6 @@ jobs:
 
       - name: Build minimal project
         shell: bash
-        env:
-          # TODO: More reliable ways may exist than random envs
-          DOCKER_DEFAULT_PLATFORM: ${{ matrix.engine == 'docker' && matrix.platform || '' }}
-          BUILDAH_DEFAULT_PLATFORM: ${{ matrix.engine == 'podman' && matrix.platform || '' }}
         run: |
           echo "Building minimal project for ${{ matrix.platform }}..."
           ./paul-envs build build-minimal
@@ -512,10 +495,6 @@ jobs:
 
       - name: Build Node.js project
         shell: bash
-        env:
-          # TODO: More reliable ways may exist than random envs
-          DOCKER_DEFAULT_PLATFORM: ${{ matrix.engine == 'docker' && matrix.platform || '' }}
-          BUILDAH_DEFAULT_PLATFORM: ${{ matrix.engine == 'podman' && matrix.platform || '' }}
         run: |
           echo "Building Node.js project..."
           ./paul-envs build build-node
@@ -585,7 +564,7 @@ jobs:
             arch: amd64
             platform: linux/amd64
             engine: docker
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             arch: arm64
             platform: linux/arm64
             engine: docker
@@ -593,7 +572,7 @@ jobs:
             arch: amd64
             platform: linux/amd64
             engine: podman
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             arch: arm64
             platform: linux/arm64
             engine: podman
@@ -625,19 +604,6 @@ jobs:
           # Sadly Ubuntu's version of podman-compose is bugged for CI purposes
           # (--tty overriding stuff). Force a more recent one
           pip install "podman-compose>=1.1.0" --break-system-packages
-
-      - name: Set up QEMU (Docker)
-        if: matrix.engine == 'docker' && matrix.arch == 'arm64'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.platform }}
-      
-      - name: Set up QEMU (Podman)
-        if: matrix.engine == 'podman' && matrix.arch == 'arm64'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-static
-          sudo systemctl restart systemd-binfmt || true
 
       - name: Cache Docker layers
         if: matrix.engine == 'docker'
@@ -705,10 +671,6 @@ jobs:
 
       - name: Build full build
         shell: bash
-        env:
-          # TODO: More reliable ways may exist than random envs
-          DOCKER_DEFAULT_PLATFORM: ${{ matrix.engine == 'docker' && matrix.platform || '' }}
-          BUILDAH_DEFAULT_PLATFORM: ${{ matrix.engine == 'podman' && matrix.platform || '' }}
         run: |
           echo "Building full build for ${{ matrix.platform }}..."
           ./paul-envs build full-build
