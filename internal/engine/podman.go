@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/peaberberian/paul-envs/internal/files"
+	"golang.org/x/term"
 )
 
 // Implements `ContainerEngine` for Podman with a Compose-compatible frontend.
@@ -64,8 +65,7 @@ func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntr
 
 func (c *PodmanEngine) RunContainer(ctx context.Context, project files.ProjectEntry, args []string) error {
 	cmdArgs := []string{"run", "--rm", "paulenv"}
-	// TODO: Shouldn't we just detect if the caller just intend to run a command (and exit)?
-	if os.Getenv("CI") != "" {
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
 		cmdArgs = append([]string{"--podman-run-args=--tty=false"}, cmdArgs...)
 	}
 	cmdArgs = append(cmdArgs, args...)
