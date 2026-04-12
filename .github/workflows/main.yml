@@ -727,13 +727,10 @@ jobs:
           EXPECTED_ARCH="${{ matrix.arch }}"
           CONTAINER_OUTPUT=$(timeout 60s ./paul-envs run full-build bash -c "
             source ~/.bashrc
-            echo \"TITI\"
-            export PATH=\"\$HOME/.local/share/mise/shims:\$PATH\"
-            echo \"TITI\"
-            echo \"\$PATH\"
-            echo \"TOTO\"
-            ls \$HOME/.local/share/mise/shims/
-            echo \"TNTO\"
+            export PATH=\"\$HOME/.container-local/data/mise/shims:\$PATH\"
+            echo "AAAA"
+            mise env
+            echo "BBBB"
             echo \"Shell: bash\"
             echo \"Architecture: \$(uname -m)\"
             echo \"\"
