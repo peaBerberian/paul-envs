@@ -42,6 +42,9 @@ Key features:
 -  **Shared caches**: cache directories are shared across all projects to avoid
    redundant downloads.
 
+-  **Fast setup**: Single shared `Dockerfile` means new project containers
+   build quickly.
+
 -  **Easy to use**: I made it compatible with MacOS, Linux and Windows, with
    automatic x86_64 or arm64 container creation depending on the host.
 

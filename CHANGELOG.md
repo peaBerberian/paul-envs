@@ -2,12 +2,19 @@
 
 ## Unreleased
 
-- `paul-env run <name> <command>` now always runs `command` in the (default) shell so `$PATH` can be more exhaustive.
-- Don't cache build anymore with both `podman` and `docker` so a `build` always lead to the predictible and wanted base
+### Changes
+
+- `paul-env run <name> <command>` now always runs `command` in the (default) shell
+- Still set base directory envs (e.g. `XDG_*`) for login shells
 
 ## v0.6.0 (2026-04-12)
 
+### Features
+
 - Make it compatible with `podman-compose` to enable rootless usage
+
+### Bug fixes
+
 - Store `.claude` and `.codex` in `$XDG_STATE_HOME` so they persist
 
 ## v0.5.0 (2026-02-08)
