@@ -726,6 +726,13 @@ jobs:
           set +e
           EXPECTED_ARCH="${{ matrix.arch }}"
           CONTAINER_OUTPUT=$(timeout 60s ./paul-envs run full-build bash -c "
+            echo \$XDG_DATA_HOME
+            echo \$XDG_STATE_HOME
+            echo \$XDG_CACHE_HOME
+            export XDG_CACHE_HOME=\"\$HOME/.container-cache/cache\"
+            export XDG_STATE_HOME=\"\$HOME/.container-local/state\"
+            export XDG_DATA_HOME=\"\$HOME/.container-local/data\"
+
             source ~/.bashrc
             export PATH=\"\$HOME/.container-local/data/mise/shims:\$PATH\"
             echo "AAAA"
