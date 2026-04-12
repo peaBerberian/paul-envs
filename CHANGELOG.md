@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.6.0 (2026-04-12)
 
 - Make it compatible with `podman-compose` to enable rootless usage
 - Store `.claude` and `.codex` in `$XDG_STATE_HOME` so they persist
