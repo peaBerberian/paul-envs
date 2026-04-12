@@ -33,8 +33,6 @@ if [ ! -f "$LOCAL_MARKER" ]; then
     mkdir -p "$CONTAINER_LOCAL_DIR"
     cp -a "$INITIAL_LOCAL_DIR/." "$CONTAINER_LOCAL_DIR/" 2>/dev/null || true
     touch "$LOCAL_MARKER"
-    # Rebuild shims in case paths changed
-    su ${CONTAINER_USERNAME} -c "command -v mise && mise reshim" 2>/dev/null || true
 fi
 chown -R "${CONTAINER_USERNAME}:${CONTAINER_USERNAME}" "$CONTAINER_LOCAL_DIR" 2>/dev/null || true
 
