@@ -727,9 +727,11 @@ jobs:
           EXPECTED_ARCH="${{ matrix.arch }}"
           CONTAINER_OUTPUT=$(timeout 60s ./paul-envs run full-build bash -c "
             source ~/.bashrc
-            echo "TITI"
-            echo \$PATH"
-            echo "TOTO"
+            echo \"TUTU\"
+            mise activate bash
+            echo \"TITI\"
+            echo \"\$PATH\"
+            echo \"TOTO\"
             echo \"Shell: bash\"
             echo \"Architecture: \$(uname -m)\"
             echo \"\"
