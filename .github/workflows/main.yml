@@ -731,6 +731,10 @@ jobs:
             echo "AAAA"
             mise env
             echo "BBBB"
+            mise ls
+            echo "CCCC"
+            ls \$HOME/.container-local/data/mise/installs/
+            echo "DDDD"
             echo \"Shell: bash\"
             echo \"Architecture: \$(uname -m)\"
             echo \"\"
