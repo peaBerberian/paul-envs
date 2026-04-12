@@ -1,4 +1,4 @@
-# Dockerfile - Version: 1.3.0
+# Dockerfile - Version: 1.4.0
 # ===========================
 #
 # This "Dockerfile" sets a basic Ubuntu LTS environment with a shell, the wanted
@@ -247,11 +247,15 @@ RUN if [ "$INSTALL_OPEN_CODE" = "true" ]; then \
 
 # Install Claude Code (optional)
 RUN if [ "$INSTALL_CLAUDE_CODE" = "true" ]; then \
+    mkdir -p $XDG_STATE_HOME/claude && \
+    ln -sfn $XDG_STATE_HOME/claude ~/.claude && \
     curl -fsSL https://claude.ai/install.sh | bash; \
   fi
 
 # Install OpenAI Codex (optional)
 RUN if [ "$INSTALL_CODEX" = "true" ]; then \
+    mkdir -p $XDG_STATE_HOME/codex && \
+    ln -sfn $XDG_STATE_HOME/codex ~/.codex && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
         CODEX_ARCH="x86_64-unknown-linux-musl"; \

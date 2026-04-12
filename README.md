@@ -11,8 +11,8 @@ itself can take place inside the container._
 
 ## What's this
 
-`paul-envs` is both a wrapper over the `docker compose` tool and a configuration
-generator for it.
+`paul-envs` is both a wrapper over a Compose-compatible container workflow
+(`docker compose` or `podman-compose`) and a configuration generator for it.
 
 Each of the created containers is similar in a way to [dev
 containers](https://containers.dev/) in that they are targeted for development
@@ -165,7 +165,11 @@ after the command succeeds). It doesn't build anything yet.
 The previous file created both a "compose" and "env" file - basically
 configuration to define the container we want to build.
 
-This step relies on `docker compose`, which you should have locally installed.
+This step relies on a Compose-compatible frontend, which should be installed
+locally:
+
+- `docker compose` for Docker
+- `podman-compose` for Podman
 
 To build a container, just run the `paul-envs build <NAME>` command.
 For example, with a container named `myApp`, you would just do:
@@ -275,12 +279,14 @@ will be removed when the container is exited).
 ## TODO:
 
 - help flag per commands
-- Add "init bash / zsh /fish" commands to simplify auto-completion setups
+- Ask which container engine to use if both podman-compose and docker are available
+- Make `build` / `run` / `remove` / `clean` behavior adaptive if multiple container
+  engine are installed: look at the one used at build time etc.
+- Add "init bash / zsh / fish" commands to simplify auto-completion setups
 - no-prompt flags for clean, remove...
 - `update` command?
 - `kill` command?
 - `up` command?
-- rootless support
 - Add `kakoune` and `helix` as potential in-container editors
 - less gh-action scripts, more shell scripts
 - Kill containers on same image on build?

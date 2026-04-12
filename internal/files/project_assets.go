@@ -457,7 +457,7 @@ func (filestore *FileStore) ReadBuildInfo(projectName string) (*buildState, erro
 	return &bState, nil
 }
 
-func (filestore *FileStore) NeedsRebuild(projectName string, bState *buildState) (bool, RebuildReason, error) {
+func (filestore *FileStore) NeedsRebuild(projectName string, currentEngineName string, bState *buildState) (bool, RebuildReason, error) {
 	if bState == nil {
 		return false, RebuildNotNeeded, errors.New("cannot determine if rebuild is needed, no build state")
 	}
@@ -485,7 +485,7 @@ func (filestore *FileStore) NeedsRebuild(projectName string, bState *buildState)
 		return true, RebuildEnvChanged, nil
 	}
 
-	if bState.containerEngine != "docker" {
+	if currentEngineName != "" && bState.containerEngine != currentEngineName {
 		return true, RebuildDifferentEngine, nil
 	}
 

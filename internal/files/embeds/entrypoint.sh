@@ -25,6 +25,7 @@ if [ ! -f "$CACHE_MARKER" ]; then
     cp -a "$INITIAL_CACHE_DIR/." "$CONTAINER_CACHE_DIR/" 2>/dev/null || true
     touch "$CACHE_MARKER"
 fi
+chown -R "${CONTAINER_USERNAME}:${CONTAINER_USERNAME}" "$CONTAINER_CACHE_DIR" 2>/dev/null || true
 
 # Initialize local state (per-project, always check)
 if [ ! -f "$LOCAL_MARKER" ]; then
@@ -33,6 +34,7 @@ if [ ! -f "$LOCAL_MARKER" ]; then
     cp -a "$INITIAL_LOCAL_DIR/." "$CONTAINER_LOCAL_DIR/" 2>/dev/null || true
     touch "$LOCAL_MARKER"
 fi
+chown -R "${CONTAINER_USERNAME}:${CONTAINER_USERNAME}" "$CONTAINER_LOCAL_DIR" 2>/dev/null || true
 
 # SSH daemon setup
 if [[ -d /var/run/sshd ]] && ! pgrep -x sshd >/dev/null; then

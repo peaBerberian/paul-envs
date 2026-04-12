@@ -1,4 +1,4 @@
-# Compose File Version: 1.3.0
+# Compose File Version: 1.4.0
 #
 # "Compose file" for your project, which will be relied on when building and
 # running your container alongside the `env file` in the same directory.
@@ -7,6 +7,7 @@
 
 services:
   paulenv:
+    userns_mode: keep-id
 {{- if or .Ports .EnableSSH}}
     # Ports opened in this container
     ports:
