@@ -735,6 +735,7 @@ jobs:
             echo "CCCC"
             ls \$HOME/.container-local/data/mise/installs/
             echo "DDDD"
+            echo "EEEE"
             echo \"Shell: bash\"
             echo \"Architecture: \$(uname -m)\"
             echo \"\"
