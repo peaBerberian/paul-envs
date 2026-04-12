@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `paul-env run <name> <command>` now always runs `command` in the (default) shell so `$PATH` can be more exhaustive.
+
 ## v0.6.0 (2026-04-12)
 
 - Make it compatible with `podman-compose` to enable rootless usage

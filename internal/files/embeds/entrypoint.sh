@@ -49,5 +49,12 @@ fi
 if [[ $# -eq 0 ]]; then
     exec su ${CONTAINER_USERNAME} -s ${USER_SHELL}
 else
-    exec runuser -u ${CONTAINER_USERNAME} -- "$@"
+    case "$USER_SHELL" in
+        */fish)
+            exec su ${CONTAINER_USERNAME} -s ${USER_SHELL} -l -c 'exec $argv[1] $argv[2..]' -- "$@"
+            ;;
+        *)
+            exec su ${CONTAINER_USERNAME} -s ${USER_SHELL} -l -c '$0 "$@"' "$@"
+            ;;
+    esac
 fi
