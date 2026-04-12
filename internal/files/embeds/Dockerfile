@@ -1,4 +1,4 @@
-# Dockerfile - Version: 1.4.0
+# Dockerfile - Version: 1.5.0
 # ===========================
 #
 # This "Dockerfile" sets a basic Ubuntu LTS environment with a shell, the wanted
@@ -55,15 +55,6 @@ ENV SHELL=/usr/bin/${USER_SHELL}
 RUN mkdir -p /home/${USERNAME}/.container-cache && \
     mkdir -p /home/${USERNAME}/.container-local
 
-# Redirect history to a persisted `.container-local` directory
-# NOTE: the `fish` shell already handle all this more sanely following `XDG` directories standards
-RUN echo "export HISTFILE=/home/${USERNAME}/.container-local/.bash_history" > /home/${USERNAME}/.container-overrides.bash && \
-    echo "export HISTFILE=/home/${USERNAME}/.container-local/.zsh_history" > /home/${USERNAME}/.container-overrides.zsh && \
-    printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" >> /home/${USERNAME}/.bashrc && \
-    if [ "$USER_SHELL" = "zsh" ]; then \
-      printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" >> /home/${USERNAME}/.zshrc; \
-    fi
-
 # Set various persistent caches locations through env
 ENV XDG_CACHE_HOME=/home/${USERNAME}/.container-cache/cache \
     XDG_STATE_HOME=/home/${USERNAME}/.container-local/state \
@@ -104,12 +95,34 @@ ARG GIT_AUTHOR_NAME=""
 ARG GIT_AUTHOR_EMAIL=""
 ARG DOTFILES_DIR="./placeholder"
 
-USER root
-
 # Set all the right envs to the persisted storages just to be sure
 ENV _ZO_DATA_DIR=/home/${USERNAME}/.container-local/zoxide \
     STARSHIP_CACHE=/home/${USERNAME}/.container-local/starship \
     ATUIN_DB_PATH=/home/${USERNAME}/.container-local/atuin/history.db
+
+# Write shell files that will ensure a sane initial state in the container, with the right
+# envs (ENV instructions are not sufficient as we may run a login shell).
+RUN printf "export XDG_CACHE_HOME=%s\nexport XDG_STATE_HOME=%s\nexport XDG_DATA_HOME=%s\nexport _ZO_DATA_DIR=%s\nexport STARSHIP_CACHE=%s\nexport ATUIN_DB_PATH=%s\n" \
+    "${XDG_CACHE_HOME}" "${XDG_STATE_HOME}" "${XDG_DATA_HOME}" "${_ZO_DATA_DIR}" "${STARSHIP_CACHE}" "${ATUIN_DB_PATH}" \
+    | tee /home/${USERNAME}/.container-overrides.bash \
+          /home/${USERNAME}/.container-overrides.zsh > /dev/null && \
+    echo "export HISTFILE=/home/${USERNAME}/.container-local/.bash_history" >> /home/${USERNAME}/.container-overrides.bash && \
+    echo "export HISTFILE=/home/${USERNAME}/.container-local/.zsh_history" >> /home/${USERNAME}/.container-overrides.zsh && \
+    printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" >> /home/${USERNAME}/.bashrc && \
+    if [ "$USER_SHELL" = "zsh" ]; then \
+      printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" >> /home/${USERNAME}/.zshrc; \
+    fi
+
+RUN printf "set -gx XDG_CACHE_HOME %s\nset -gx XDG_STATE_HOME %s\nset -gx XDG_DATA_HOME %s\nset -gx _ZO_DATA_DIR %s\nset -gx STARSHIP_CACHE %s\nset -gx ATUIN_DB_PATH %s\n" \
+    "${XDG_CACHE_HOME}" "${XDG_STATE_HOME}" "${XDG_DATA_HOME}" "${_ZO_DATA_DIR}" "${STARSHIP_CACHE}" "${ATUIN_DB_PATH}" \
+    > /home/${USERNAME}/.container-overrides.fish && \
+    if [ "$USER_SHELL" = "fish" ]; then \
+      mkdir -p /home/${USERNAME}/.config/fish && \
+      printf "\n# Container overrides\nif test -f ~/.container-overrides.fish\n    source ~/.container-overrides.fish\nend\n" \
+        >> /home/${USERNAME}/.config/fish/config.fish; \
+    fi
+
+USER root
 
 # Install sudo and configure it (optional)
 RUN if [ "$ENABLE_SUDO" = "true" ]; then \
@@ -465,13 +478,33 @@ RUN --mount=type=bind,source=${DOTFILES_DIR},target=/tmp/configs \
 
 # Ensure HISTFILE override is still sourced after config copy
 # This guarantees history persistence even if user configs were copied
-RUN if [ -f /home/${USERNAME}/.bashrc ] && ! grep -qF 'container-overrides.bash' /home/${USERNAME}/.bashrc; then \
+RUN if [ -f /home/${USERNAME}/.bashrc ] && ! grep -qF '.container-overrides.bash' /home/${USERNAME}/.bashrc; then \
     printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" >> /home/${USERNAME}/.bashrc; \
   fi
 
-RUN if [ "$USER_SHELL" = "zsh" ] && [ -f /home/${USERNAME}/.zshrc ] && ! grep -qF 'container-overrides.zsh' /home/${USERNAME}/.zshrc; then \
+RUN if [ "$USER_SHELL" = "zsh" ] && [ -f /home/${USERNAME}/.zshrc ] && ! grep -qF '.container-overrides.zsh' /home/${USERNAME}/.zshrc; then \
     printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" >> /home/${USERNAME}/.zshrc; \
   fi
+
+RUN if [ "$USER_SHELL" = "fish" ] && \
+       [ -f /home/${USERNAME}/.config/fish/config.fish ] && \
+       ! grep -qF '.container-overrides.fish' /home/${USERNAME}/.config/fish/config.fish; then \
+  printf "\n# Container overrides\nif test -f ~/.container-overrides.fish\n    source ~/.container-overrides.fish\nend\n" \
+    >> /home/${USERNAME}/.config/fish/config.fish; \
+fi
+
+# Ensure overrides are sourced in login shells too
+RUN if ! grep -qF '.container-overrides.bash' /home/${USERNAME}/.bash_profile 2>/dev/null; then \
+      printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" \
+        >> /home/${USERNAME}/.bash_profile; \
+    fi
+
+RUN if [ "$USER_SHELL" = "zsh" ] && ! grep -qF '.container-overrides.zsh' /home/${USERNAME}/.zprofile 2>/dev/null; then \
+      printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" \
+        >> /home/${USERNAME}/.zprofile; \
+    fi
+
+# NOTE: No need for fish here because it reuses ~/.config/fish/config.fish in that login shell case
 
 # Pre-install nvim plugins if neovim is installed with `lazy.nvim` and config
 # exists, for convenience
