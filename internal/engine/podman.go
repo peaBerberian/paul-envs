@@ -46,6 +46,7 @@ func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntr
 		ctx,
 		project,
 		"build",
+		"--no-cache",
 	)
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@
 ## Unreleased
 
 - `paul-env run <name> <command>` now always runs `command` in the (default) shell so `$PATH` can be more exhaustive.
+- Don't cache build anymore with both `podman` and `docker` so a `build` always lead to the predictible and wanted base
 
 ## v0.6.0 (2026-04-12)
 
