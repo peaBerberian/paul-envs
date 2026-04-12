@@ -725,7 +725,7 @@ jobs:
 
           set +e
           EXPECTED_ARCH="${{ matrix.arch }}"
-          CONTAINER_OUTPUT=$(timeout 60s ./paul-envs run full-build bash -l -c "
+          CONTAINER_OUTPUT=$(timeout 60s ./paul-envs run full-build bash -c "
             source ~/.bashrc
             echo \"Shell: bash\"
             echo \"Architecture: \$(uname -m)\"
