@@ -726,6 +726,10 @@ jobs:
           set +e
           EXPECTED_ARCH="${{ matrix.arch }}"
           CONTAINER_OUTPUT=$(timeout 60s ./paul-envs run full-build bash -c "
+            export XDG_CACHE_HOME=\"\$HOME/.container-cache/cache\"
+            export XDG_STATE_HOME=\"\$HOME/.container-local/state\"
+            export XDG_DATA_HOME=\"\$HOME/.container-local/data\"
+
             source ~/.bashrc
             echo \"Shell: bash\"
             echo \"Architecture: \$(uname -m)\"
@@ -899,6 +903,11 @@ jobs:
 
           set +e
           FISH_CONTAINER_OUTPUT=$(timeout 60s ./paul-envs run full-build fish -l -c '
+            set -x XDG_CACHE_HOME "$HOME/.container-cache/cache"
+            set -x XDG_STATE_HOME "$HOME/.container-local/state"
+            set -x XDG_DATA_HOME "$HOME/.container-local/data"
+
+            source ~/.config/fish/config.fish
             echo "Shell: fish"
             echo "Architecture: "(uname -m)
             echo ""
