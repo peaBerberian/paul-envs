@@ -324,7 +324,8 @@ func promptMissing(cons *console.Console, cfg *config.Config) error {
 	}
 
 	// Tools
-	if !hasAnyTool(cfg) {
+	hasTool := hasAnyTool(cfg)
+	if !hasTool {
 		cons.WriteLn("")
 		if err := promptTools(cons, cfg); err != nil {
 			return err
@@ -332,6 +333,12 @@ func promptMissing(cons *console.Console, cfg *config.Config) error {
 	}
 	if cfg.InstallStarship && cfg.InstallOhMyPosh {
 		return fmt.Errorf("Starship and Oh My Posh cannot both be enabled — choose at most one prompt")
+	}
+	if !hasTool {
+		cons.WriteLn("")
+		if err := promptAgenticTool(cons, cfg); err != nil {
+			return err
+		}
 	}
 
 	// Sudo
@@ -612,10 +619,7 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  6) Zellij (terminal multiplexer)")
 		cons.WriteLn("  7) Jujutsu (Git-compatible VCS)")
 		cons.WriteLn("  8) Delta (Colored pager for Git and other tools)")
-		cons.WriteLn("  9) opencode (LLM tool)")
-		cons.WriteLn("  10) Claude Code (LLM tool)")
-		cons.WriteLn("  11) OpenAI's codex (LLM tool)")
-		cons.WriteLn("  12) Firefox (web browser)")
+		cons.WriteLn("  9) Firefox (web browser)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
@@ -644,12 +648,6 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			case "8":
 				cfg.InstallDelta = true
 			case "9":
-				cfg.InstallOpenCode = true
-			case "10":
-				cfg.InstallClaudeCode = true
-			case "11":
-				cfg.InstallCodex = true
-			case "12":
 				cfg.InstallFirefox = true
 			case "none":
 				return nil
@@ -676,10 +674,53 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallZellij = false
 			cfg.InstallJujutsu = false
 			cfg.InstallDelta = false
+			cfg.InstallFirefox = false
+			continue
+		}
+
+		return nil
+	}
+}
+
+func promptAgenticTool(cons *console.Console, cfg *config.Config) error {
+	for {
+		cons.Info("=== LLM Agent ===")
+		cons.WriteLn("Which of those LLM agentic TUI do you want to install? (space-separated numbers, or Enter to skip all)")
+		cons.WriteLn("  1) opencode")
+		cons.WriteLn("  2) Claude Code")
+		cons.WriteLn("  3) OpenAI's codex")
+
+		choices, err := cons.AskString("Choice", "none")
+		if err != nil {
+			return fmt.Errorf("unable to prompt for LLM choice: %w", err)
+		}
+
+		allValid := true
+		selectedChoices := strings.FieldsSeq(choices)
+
+		for choice := range selectedChoices {
+			switch choice {
+			case "1":
+				cfg.InstallOpenCode = true
+			case "2":
+				cfg.InstallClaudeCode = true
+			case "3":
+				cfg.InstallCodex = true
+			case "none":
+				return nil
+			default:
+				cons.Warn("Unrecognized choice: \"%s\"", choice)
+				allValid = false
+			}
+		}
+
+		if !allValid {
+			cons.Warn("Please select valid elements from the list, or leave empty for no agent.")
+			cons.WriteLn("")
+			// Reset any partial changes
 			cfg.InstallOpenCode = false
 			cfg.InstallClaudeCode = false
 			cfg.InstallCodex = false
-			cfg.InstallFirefox = false
 			continue
 		}
 
