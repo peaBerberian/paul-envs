@@ -55,6 +55,7 @@ type EnvTemplateData struct {
 	InstallOpenCode   string
 	InstallClaudeCode string
 	InstallCodex      string
+	InstallChrome     string
 	InstallFirefox    string
 	GitName           string
 	GitEmail          string

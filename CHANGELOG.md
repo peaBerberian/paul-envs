@@ -2,10 +2,15 @@
 
 ## Unreleased
 
+### features
+
+- Add `chrome` web browser
+
 ### Changes
 
 - make `mise` opt-out, not opt-in, as it is basically needed for fine-grained versions for language tooling
 - tui: separate agent step from tools step to be more readable
+- tui: separate browser step from tools step to be more readable
 
 ### Bug fixes
 

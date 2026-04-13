@@ -76,12 +76,15 @@ Options for create (all optional):
                            (prompted if no tool specified)
   --codex                  Install OpenAI's codex (LLM tool)
                            (prompted if no tool specified)
+  --chrome                 Install Google Chrome (web browser)
+	                         WARNING: Not supported on arm64 machines
+                           (prompted if no browser specified)
   --firefox                Install Mozilla Firefox (web browser)
-                           (prompted if no tool specified)
+                           (prompted if no browser specified)
   --no-mise                Prevent the installation of "mise", which is used to install
-                         	 languages and related tool (e.g. "node", "rust"/"cargo" etc.).
-													 When disabled, we will only rely on Ubuntu's repositories for
-													 language tools installation which may be old (yet stable) versions.
+                           languages and related tool (e.g. "node", "rust"/"cargo" etc.).
+                           When disabled, we will only rely on Ubuntu's repositories for
+                           language tools installation which may be old (yet stable) versions.
   --package PKG_NAME       Additional Ubuntu package (prompted if not specified, can be repeated)
   --port PORT              Expose container port (prompted if not specified, can be repeated)
   --volume HOST:CONT[:ro]  Mount volume (prompted if not specified, can be repeated)
@@ -116,6 +119,7 @@ Full Configuration Example:
     --open-code \
     --claude-code \
     --codex \
+    --chrome \
     --firefox \
     --enable-ssh \
     --enable-sudo \

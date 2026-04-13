@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -90,6 +91,7 @@ type parsedFlags struct {
 	installOpenCode   bool
 	installClaudeCode bool
 	installCodex      bool
+	installChrome     bool
 	installFirefox    bool
 	packages          []string
 	ports             []string
@@ -130,6 +132,7 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installOpenCode, "open-code", false, "Install Open Code")
 	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
 	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
+	flagset.BoolVar(&p.installChrome, "chrome", false, "Install Google Chrome")
 	flagset.BoolVar(&p.installFirefox, "firefox", false, "Install Mozilla Firefox")
 
 	// Parse repeatable flags manually
@@ -250,6 +253,7 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	cfg.InstallOpenCode = p.installOpenCode
 	cfg.InstallClaudeCode = p.installClaudeCode
 	cfg.InstallCodex = p.installCodex
+	cfg.InstallChrome = p.installChrome
 	cfg.InstallFirefox = p.installFirefox
 
 	// Project name
@@ -345,6 +349,13 @@ func promptMissing(cons *console.Console, cfg *config.Config) error {
 	if !hasTool {
 		cons.WriteLn("")
 		if err := promptAgenticTool(cons, cfg); err != nil {
+			return err
+		}
+	}
+
+	if !hasAnyBrowser(cfg) {
+		cons.WriteLn("")
+		if err := promptBrowser(cons, cfg); err != nil {
 			return err
 		}
 	}
@@ -474,8 +485,11 @@ func hasAnyTool(cfg *config.Config) bool {
 	return cfg.InstallNeovim || cfg.InstallStarship ||
 		cfg.InstallOhMyPosh || cfg.InstallAtuin ||
 		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta ||
-		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex ||
-		cfg.InstallFirefox
+		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex
+}
+
+func hasAnyBrowser(cfg *config.Config) bool {
+	return cfg.InstallChrome || cfg.InstallFirefox
 }
 
 func needsExactVersion(version string) bool {
@@ -641,7 +655,6 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  5) Zellij (terminal multiplexer)")
 		cons.WriteLn("  6) Jujutsu (Git-compatible VCS)")
 		cons.WriteLn("  7) Delta (Colored pager for Git and other tools)")
-		cons.WriteLn("  8) Firefox (web browser)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
@@ -667,8 +680,6 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 				cfg.InstallJujutsu = true
 			case "7":
 				cfg.InstallDelta = true
-			case "8":
-				cfg.InstallFirefox = true
 			case "none":
 				return nil
 			default:
@@ -693,7 +704,6 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallZellij = false
 			cfg.InstallJujutsu = false
 			cfg.InstallDelta = false
-			cfg.InstallFirefox = false
 			continue
 		}
 
@@ -740,6 +750,51 @@ func promptAgenticTool(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallOpenCode = false
 			cfg.InstallClaudeCode = false
 			cfg.InstallCodex = false
+			continue
+		}
+
+		return nil
+	}
+}
+
+func promptBrowser(cons *console.Console, cfg *config.Config) error {
+	for {
+		cons.Info("=== Web Browser ===")
+		cons.WriteLn("Which of those web browsers do you want to install? (space-separated numbers, or Enter to skip all)")
+		cons.WriteLn("  1) Firefox")
+		cons.WriteLn("  2) Google Chrome (WARNING: unsupported on arm64)")
+
+		choices, err := cons.AskString("Choice", "none")
+		if err != nil {
+			return fmt.Errorf("unable to prompt for web browser: %w", err)
+		}
+
+		allValid := true
+		selectedChoices := strings.FieldsSeq(choices)
+
+		for choice := range selectedChoices {
+			switch choice {
+			case "1":
+				cfg.InstallFirefox = true
+			case "2":
+				if runtime.GOARCH == "arm64" {
+					cons.Warn("Chrome is unsupported on your current architecture.\nIt will only install if the container is built on a amd64 machine.")
+				}
+				cfg.InstallChrome = true
+			case "none":
+				return nil
+			default:
+				cons.Warn("Unrecognized choice: \"%s\"", choice)
+				allValid = false
+			}
+		}
+
+		if !allValid {
+			cons.Warn("Please select valid elements from the list, or leave empty for no web browser.")
+			cons.WriteLn("")
+			// Reset any partial changes
+			cfg.InstallChrome = false
+			cfg.InstallFirefox = false
 			continue
 		}
 
