@@ -291,6 +291,6 @@ will be removed when the container is exited).
 - less gh-action scripts, more shell scripts
 - Kill containers on same image on build?
 - Reference counted container instead of master/slaves
-- Does cache pruning in `clean` actually does anything?
+- Does cache pruning in `clean` actually do anything?
 - ci tests for clean command
 - Update Dockerfile when not same version
