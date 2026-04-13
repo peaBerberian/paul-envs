@@ -106,7 +106,7 @@ jobs:
             --python latest \
             --go latest
 
-      - name: Test create with specific versions (requires mise)
+      - name: Test create with specific versions
         shell: bash
         run: |
           ./paul-envs create ./test-project \
@@ -114,8 +114,7 @@ jobs:
             --name test-versions \
             --shell bash \
             --nodejs 20.10.0 \
-            --python 3.12.0 \
-            --mise
+            --python 3.12.0
 
       - name: Test create with tools
         shell: bash
@@ -127,7 +126,6 @@ jobs:
             --neovim \
             --starship \
             --atuin \
-            --mise \
             --zellij \
             --jujutsu \
             --delta \
@@ -225,7 +223,6 @@ jobs:
             --neovim \
             --starship \
             --atuin \
-            --mise \
             --zellij \
             --jujutsu \
             --delta \
@@ -652,7 +649,6 @@ jobs:
             --neovim \
             --starship \
             --atuin \
-            --mise \
             --zellij \
             --jujutsu \
             --delta \

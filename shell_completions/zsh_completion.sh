@@ -52,7 +52,6 @@ _paulenvs() {
                         '--starship[Install latest Starship]' \
                         '--oh-my-posh[Install latest Oh My Posh]' \
                         '--atuin[Install latest Atuin]' \
-                        '--mise[Install latest Mise]' \
                         '--zellij[Install latest Zellij]' \
                         '--jujutsu[Install latest Jujutsu]' \
                         '--delta[Install latest Delta]' \
@@ -60,6 +59,7 @@ _paulenvs() {
                         '--claude-code[Install latest Claude Code]' \
 												'--codex[Install latest codex (from OpenAI)]' \
                         '--firefox[Install Mozilla Firefox]' \
+                        '--no-mise[Prevent Mise installation]' \
                         '*--package[Additional package from Ubuntu repo]:package:' \
                         '*--port[Expose port]:port:' \
                         '*--volume[Add volume]:volume:_files'

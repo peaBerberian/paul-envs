@@ -79,11 +79,11 @@ type parsedFlags struct {
 	enableSudo        bool
 	gitName           string
 	gitEmail          string
+	noMise            bool
 	installNeovim     bool
 	installStarship   bool
 	installOhMyPosh   bool
 	installAtuin      bool
-	installMise       bool
 	installZellij     bool
 	installJujutsu    bool
 	installDelta      bool
@@ -122,8 +122,8 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installNeovim, "neovim", false, "Install Neovim")
 	flagset.BoolVar(&p.installStarship, "starship", false, "Install Starship")
 	flagset.BoolVar(&p.installOhMyPosh, "oh-my-posh", false, "Install Oh My Posh")
+	flagset.BoolVar(&p.noMise, "no-mise", false, "Install Mise")
 	flagset.BoolVar(&p.installAtuin, "atuin", false, "Install Atuin")
-	flagset.BoolVar(&p.installMise, "mise", false, "Install Mise")
 	flagset.BoolVar(&p.installZellij, "zellij", false, "Install Zellij")
 	flagset.BoolVar(&p.installJujutsu, "jujutsu", false, "Install Jujutsu")
 	flagset.BoolVar(&p.installDelta, "delta", false, "Install Delta")
@@ -243,7 +243,7 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	cfg.InstallStarship = p.installStarship
 	cfg.InstallOhMyPosh = p.installOhMyPosh
 	cfg.InstallAtuin = p.installAtuin
-	cfg.InstallMise = p.installMise
+	cfg.InstallMise = !p.noMise
 	cfg.InstallZellij = p.installZellij
 	cfg.InstallJujutsu = p.installJujutsu
 	cfg.InstallDelta = p.installDelta
@@ -301,10 +301,18 @@ func promptMissing(cons *console.Console, cfg *config.Config) error {
 		}
 	}
 
+	// Mise (enabled by default)
+	if cfg.InstallMise {
+		cons.WriteLn("")
+		if err := promptMise(cons, cfg); err != nil {
+			return err
+		}
+	}
+
 	// Languages
 	if !hasAnyLanguage(cfg) {
 		cons.WriteLn("")
-		if err := promptLanguages(cons, cfg); err != nil {
+		if err := promptLanguages(cons, cfg, cfg.InstallMise); err != nil {
 			return err
 		}
 	}
@@ -464,8 +472,7 @@ func hasAnyLanguage(cfg *config.Config) bool {
 
 func hasAnyTool(cfg *config.Config) bool {
 	return cfg.InstallNeovim || cfg.InstallStarship ||
-		cfg.InstallOhMyPosh ||
-		cfg.InstallAtuin || cfg.InstallMise ||
+		cfg.InstallOhMyPosh || cfg.InstallAtuin ||
 		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta ||
 		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex ||
 		cfg.InstallFirefox
@@ -510,7 +517,7 @@ func promptShell(cons *console.Console, cfg *config.Config) error {
 }
 
 // TODO: Return languages instead through a new type?
-func promptLanguages(cons *console.Console, cfg *config.Config) error {
+func promptLanguages(cons *console.Console, cfg *config.Config, askVersion bool) error {
 	for {
 		cons.Info("=== Language Runtimes ===")
 		cons.WriteLn("Which language runtimes do you need? (space-separated numbers, or Enter to skip)")
@@ -532,6 +539,10 @@ func promptLanguages(cons *console.Console, cfg *config.Config) error {
 		for choice := range selectedChoices {
 			switch choice {
 			case "1":
+				if !askVersion {
+					cfg.InstallNode = config.VersionLatest
+					break
+				}
 				ver, err := cons.AskString("Node.js version (latest/none/X.Y.Z)", config.VersionLatest)
 				if err != nil {
 					return fmt.Errorf("unable to prompt for Node.js version: %w", err)
@@ -544,6 +555,10 @@ func promptLanguages(cons *console.Console, cfg *config.Config) error {
 				}
 				cfg.InstallNode = ver
 			case "2":
+				if !askVersion {
+					cfg.InstallRust = config.VersionLatest
+					break
+				}
 				ver, err := cons.AskString("Rust version (latest/none/X.Y.Z)", config.VersionLatest)
 				if err != nil {
 					return fmt.Errorf("unable to prompt for Rust version: %w", err)
@@ -556,6 +571,10 @@ func promptLanguages(cons *console.Console, cfg *config.Config) error {
 				}
 				cfg.InstallRust = ver
 			case "3":
+				if !askVersion {
+					cfg.InstallPython = config.VersionLatest
+					break
+				}
 				ver, err := cons.AskString("Python version (latest/none/X.Y.Z)", config.VersionLatest)
 				if err != nil {
 					return fmt.Errorf("unable to prompt for Python version: %w", err)
@@ -568,6 +587,10 @@ func promptLanguages(cons *console.Console, cfg *config.Config) error {
 				}
 				cfg.InstallPython = ver
 			case "4":
+				if !askVersion {
+					cfg.InstallGo = config.VersionLatest
+					break
+				}
 				ver, err := cons.AskString("Go version (latest/none/X.Y.Z)", config.VersionLatest)
 				if err != nil {
 					return fmt.Errorf("unable to prompt for Go version: %w", err)
@@ -615,11 +638,10 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 		cons.WriteLn("  2) Starship (prompt)")
 		cons.WriteLn("  3) Oh My Posh (prompt)")
 		cons.WriteLn("  4) Atuin (shell history)")
-		cons.WriteLn("  5) Mise (version manager - required for specific language versions)")
-		cons.WriteLn("  6) Zellij (terminal multiplexer)")
-		cons.WriteLn("  7) Jujutsu (Git-compatible VCS)")
-		cons.WriteLn("  8) Delta (Colored pager for Git and other tools)")
-		cons.WriteLn("  9) Firefox (web browser)")
+		cons.WriteLn("  5) Zellij (terminal multiplexer)")
+		cons.WriteLn("  6) Jujutsu (Git-compatible VCS)")
+		cons.WriteLn("  7) Delta (Colored pager for Git and other tools)")
+		cons.WriteLn("  8) Firefox (web browser)")
 
 		choices, err := cons.AskString("Choice", "none")
 		if err != nil {
@@ -640,14 +662,12 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			case "4":
 				cfg.InstallAtuin = true
 			case "5":
-				cfg.InstallMise = true
-			case "6":
 				cfg.InstallZellij = true
-			case "7":
+			case "6":
 				cfg.InstallJujutsu = true
-			case "8":
+			case "7":
 				cfg.InstallDelta = true
-			case "9":
+			case "8":
 				cfg.InstallFirefox = true
 			case "none":
 				return nil
@@ -670,7 +690,6 @@ func promptTools(cons *console.Console, cfg *config.Config) error {
 			cfg.InstallStarship = false
 			cfg.InstallOhMyPosh = false
 			cfg.InstallAtuin = false
-			cfg.InstallMise = false
 			cfg.InstallZellij = false
 			cfg.InstallJujutsu = false
 			cfg.InstallDelta = false
@@ -726,6 +745,21 @@ func promptAgenticTool(cons *console.Console, cfg *config.Config) error {
 
 		return nil
 	}
+}
+
+// TODO: Return bool instead of filling Config itself?
+func promptMise(cons *console.Console, cfg *config.Config) error {
+	cons.Info("=== Installing mise ===")
+	val, err := cons.AskYesNo("The containers have `mise` installed by default to obtain the latest language tools.\nIs it OK with you?", true)
+	if err != nil {
+		return fmt.Errorf("unable to prompt for mise choice: %w", err)
+	}
+	cfg.InstallMise = val
+	if !val {
+		cons.WriteLn("")
+		cons.Warn("`mise` disabled.\nFalling back to Ubuntu repositories: you won't be able to configure a specific language version.")
+	}
+	return nil
 }
 
 // TODO: Return bool instead of filling Config itself?

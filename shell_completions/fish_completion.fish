@@ -35,7 +35,6 @@ complete -c paul-envs -n "__fish_seen_subcommand_from create" -l neovim -d "Inst
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l starship -d "Install Starship" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l oh-my-posh -d "Install Oh My Posh" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l atuin -d "Install Atuin" -f
-complete -c paul-envs -n "__fish_seen_subcommand_from create" -l mise -d "Install Mise" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l zellij -d "Install Zellij" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l jujutsu -d "Install Jujutsu" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l delta -d "Install Delta" -f
@@ -43,6 +42,7 @@ complete -c paul-envs -n "__fish_seen_subcommand_from create" -l open-code -d "I
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l claude-code -d "Install Claude Code" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l codex -d "Install OpenAI codex" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l firefox -d "Install Mozilla Firefox" -f
+complete -c paul-envs -n "__fish_seen_subcommand_from create" -l no-mise -d "Prevent Mise installation" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l port -d 'Expose port' -x
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l volume -d 'Add volume' -r
 

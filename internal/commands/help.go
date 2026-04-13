@@ -29,23 +29,23 @@ Options for create (all optional):
   --shell SHELL            User shell: bash|zsh|fish (prompted if not specified)
   --nodejs VERSION         Node.js installation:
                              'none' - skip installation of Node.js
-                             'latest' - use Ubuntu default package
-                             '20.10.0' - specific version (requires mise)
+                             'latest' - use latest version
+                             '20.10.0' - specific version
                            (prompted if no language specified)
   --rust VERSION           Rust installation:
                              'none' - skip installation of Rust
-                             'latest' - latest stable via rustup
-                             '1.75.0' - specific version (requires mise)
+                             'latest' - use latest version
+                             '1.75.0' - specific version
                            (prompted if no language specified)
   --python VERSION         Python installation:
                              'none' - skip installation of Python
-                             'latest' - use Ubuntu default package
-                             '3.12.0' - specific version (requires mise)
+                             'latest' - use latest version
+                             '3.12.0' - specific version
                            (prompted if no language specified)
   --go VERSION             Go installation:
                              'none' - skip installation of Go
-                             'latest' - use Ubuntu default package
-                             '1.21.5' - specific version (requires mise)
+                             'latest' - use latest version
+                             '1.21.5' - specific version
                            (prompted if no language specified)
   --enable-wasm            Add WASM-specialized tools (binaryen, Rust wasm target if enabled)
                            (prompted if no language specified)
@@ -63,7 +63,6 @@ Options for create (all optional):
                            (prompted if no tool specified)
   --atuin                  Install Atuin (shell history)
                            (prompted if no tool specified)
-  --mise                   Install Mise (version manager - required for specific language versions)
                            (prompted if no tool specified)
   --zellij                 Install Zellij (terminal multiplexer)
                            (prompted if no tool specified)
@@ -79,6 +78,10 @@ Options for create (all optional):
                            (prompted if no tool specified)
   --firefox                Install Mozilla Firefox (web browser)
                            (prompted if no tool specified)
+  --no-mise                Prevent the installation of "mise", which is used to install
+                         	 languages and related tool (e.g. "node", "rust"/"cargo" etc.).
+													 When disabled, we will only rely on Ubuntu's repositories for
+													 language tools installation which may be old (yet stable) versions.
   --package PKG_NAME       Additional Ubuntu package (prompted if not specified, can be repeated)
   --port PORT              Expose container port (prompted if not specified, can be repeated)
   --volume HOST:CONT[:ro]  Mount volume (prompted if not specified, can be repeated)
@@ -94,7 +97,7 @@ Creating a configuration in a non-Interactive Mode:
   paul-envs create ~/projects/myapp --no-prompt --shell bash --nodejs latest
 
 Mixed Mode (some flags + prompts):
-  paul-envs create ~/projects/myapp --nodejs 20.10.0 --rust latest --mise
+  paul-envs create ~/projects/myapp --nodejs 20.10.0 --rust latest --no-mise
   # Will prompt for shell, sudo, packages, ports, and volumes
 
 Full Configuration Example:
@@ -105,7 +108,6 @@ Full Configuration Example:
     --rust latest \
     --python 3.12.0 \
     --go latest \
-    --mise \
     --neovim \
     --starship \
     --zellij \
