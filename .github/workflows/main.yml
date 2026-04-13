@@ -481,40 +481,6 @@ jobs:
           fi
           echo "✓ Minimal container test passed"
 
-      - name: Create project with Node.js
-        shell: bash
-        run: |
-          ./paul-envs create ./test-project \
-            --no-prompt \
-            --name build-node \
-            --shell bash \
-            --nodejs latest
-
-      - name: Build Node.js project
-        shell: bash
-        run: |
-          echo "Building Node.js project..."
-          ./paul-envs build build-node
-          echo "✓ Node.js build completed"
-
-      - name: Test Node.js installation
-        shell: bash
-        run: |
-          echo "Verifying Node.js is installed..."
-          set +e
-          timeout 30s ./paul-envs run build-node bash -c "node --version && npm --version"
-          EXIT_CODE=$?
-          set -e
-
-          if [ $EXIT_CODE -eq 124 ]; then
-            echo "Command timed out"
-            exit 1
-          elif [ $EXIT_CODE -ne 0 ]; then
-            echo "ERROR: Node.js verification failed with exit code $EXIT_CODE"
-            exit 1
-          fi
-          echo "✓ Node.js verification passed"
-
       - name: Test project workspace access
         shell: bash
         run: |
@@ -548,6 +514,43 @@ jobs:
             projects/
             *.log
           retention-days: 7
+
+  test-shells:
+    name: Test shells (${{ matrix.shell }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [bash, zsh, fish]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set Up paul-envs
+        shell: bash
+        run: |
+          make
+          cp dist/paul-envs .
+          mkdir -p test-project
+
+      - name: Create project with Node.js
+        shell: bash
+        run: |
+          ./paul-envs create ./test-project \
+            --no-prompt \
+            --name build-node-${{ matrix.shell }} \
+            --shell ${{ matrix.shell }} \
+            --nodejs latest
+
+      - name: Build Node.js project
+        shell: bash
+        run: |
+          ./paul-envs build build-node-${{ matrix.shell }}
+
+      - name: Test Node.js installation
+        shell: bash
+        run: |
+          timeout 30s ./paul-envs run build-node-${{ matrix.shell }} bash -c "node --version && npm --version"
 
   full-build:
     name: Full Build with ${{ matrix.engine }} on ${{ matrix.os }} (${{ matrix.arch }})
