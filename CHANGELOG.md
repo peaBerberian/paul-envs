@@ -4,6 +4,8 @@
 
 ### Changes
 
+- make `mise` opt-out, not opt-in, as it is basically needed for fine-grained versions for language tooling
+- tui: separate agent step from tools step to be more readable
 - `paul-env run <name> <command>` now always runs `command` in the (default) shell
 - Still set base directory envs (e.g. `XDG_*`) for login shells
 
