@@ -7,7 +7,6 @@
 
 services:
   paulenv:
-    userns_mode: keep-id
 {{- if or .Ports .EnableSSH}}
     # Ports opened in this container
     ports:
@@ -80,6 +79,7 @@ services:
         PROJECT_PATH: ${PROJECT_PATH}
         DOTFILES_DIR: ${DOTFILES_DIR:-./placeholder}
     # Supplementary important metadata - should be left as is
+    userns_mode: keep-id
     image: paulenv:{{.ProjectName}}
     pull_policy: never
     stdin_open: true
