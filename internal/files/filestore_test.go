@@ -66,6 +66,20 @@ func TestFileStore_GetProjectDir(t *testing.T) {
 	}
 }
 
+func TestFileStore_GetProjectInternalDir(t *testing.T) {
+	store := &FileStore{
+		baseDataDir:   "/test/base",
+		baseConfigDir: "/test/config",
+		projectsDir:   "/test/base/projects",
+	}
+
+	got := store.getProjectInternalDir("myproject")
+	expected := "/test/base/projects/myproject/.paul-env"
+	if got != expected {
+		t.Errorf("getProjectInternalDir() = %v, want %v", got, expected)
+	}
+}
+
 func TestFileStore_GetProjectBuildConfigPath(t *testing.T) {
 	store := &FileStore{
 		baseDataDir:   "/test/base",

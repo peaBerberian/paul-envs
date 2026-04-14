@@ -76,6 +76,9 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 	if _, err := os.Stat(projectInfoFile); os.IsNotExist(err) {
 		t.Fatal("project.lock file was not created")
 	}
+	if filepath.Dir(projectInfoFile) != store.getProjectInternalDir("testproject") {
+		t.Fatalf("project.lock should be stored in %s, got %s", store.getProjectInternalDir("testproject"), filepath.Dir(projectInfoFile))
+	}
 
 	buildCtnt, err := os.ReadFile(buildFile)
 	if err != nil {

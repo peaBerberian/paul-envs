@@ -12,6 +12,7 @@ import (
 const (
 	projectBuildConfigFilename   = "build.conf"
 	projectRuntimeConfigFilename = "run.conf"
+	projectInternalDirname       = ".paul-env"
 	projectInfoFilename          = "project.lock"
 	buildInfoFilename            = "project.buildinfo"
 )
@@ -155,7 +156,7 @@ func (f *FileStore) CreateProjectDotfilesDir(ctx context.Context, projectName st
 	if !f.DoesProjectExist(projectName) {
 		return "", fmt.Errorf("cannot copy dotfiles for project '%s': this project does not exist", projectName)
 	}
-	destDir := filepath.Join(f.getProjectDir(projectName), "nextdotfiles")
+	destDir := filepath.Join(f.getProjectInternalDir(projectName), "nextdotfiles")
 	if err := os.RemoveAll(destDir); err != nil {
 		return "", fmt.Errorf("cannot copy dotfiles because %s cannot be removed: %w", destDir, err)
 	}
@@ -174,7 +175,7 @@ func (f *FileStore) CreateProjectDotfilesDir(ctx context.Context, projectName st
 	return relativeDotfilesDir, nil
 }
 func (f *FileStore) RemoveProjectDotfilesDir(projectName string) error {
-	expectedDir := filepath.Join(f.getProjectDir(projectName), "nextdotfiles")
+	expectedDir := filepath.Join(f.getProjectInternalDir(projectName), "nextdotfiles")
 	return os.RemoveAll(expectedDir)
 }
 
@@ -200,17 +201,22 @@ func (f *FileStore) getProjectDirBase() string {
 
 // Get path to the 'project.lock' file associated to a project.
 func (f *FileStore) getProjectInfoFilePathFor(projectName string) string {
-	return filepath.Join(f.projectsDir, projectName, projectInfoFilename)
+	return filepath.Join(f.getProjectInternalDir(projectName), projectInfoFilename)
 }
 
 // Get path to the 'project.buildinfo' file associated to a project.
 func (f *FileStore) getBuildInfoFilePathFor(projectName string) string {
-	return filepath.Join(f.projectsDir, projectName, buildInfoFilename)
+	return filepath.Join(f.getProjectInternalDir(projectName), buildInfoFilename)
 }
 
 // Get directory where a specific project's files will be put.
 func (f *FileStore) getProjectDir(name string) string {
 	return filepath.Join(f.projectsDir, name)
+}
+
+// Get directory where project-specific internal state is stored.
+func (f *FileStore) getProjectInternalDir(name string) string {
+	return filepath.Join(f.getProjectDir(name), projectInternalDirname)
 }
 
 // Returns the mounted host directory associated with the project name given.

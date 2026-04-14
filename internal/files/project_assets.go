@@ -182,6 +182,9 @@ func (f *FileStore) CreateProjectFiles(
 	if err := f.userFS.MkdirAsUser(f.getProjectDir(projectName), 0755); err != nil {
 		return fmt.Errorf("create project directory: %w", err)
 	}
+	if err := f.userFS.MkdirAsUser(f.getProjectInternalDir(projectName), 0755); err != nil {
+		return fmt.Errorf("create project internal directory: %w", err)
+	}
 
 	buildBytes := buf.Bytes()
 	if err := f.userFS.WriteFileAsUser(f.GetProjectBuildConfigPath(projectName), buildBytes, 0644); err != nil {
@@ -358,7 +361,7 @@ func (f *FileStore) RefreshBuildInfoFile(projectName string, engineName string, 
 	if err != nil {
 		return fmt.Errorf("failed to create 'project.buildinfo' due to impossibility to format it: %w", err)
 	}
-	buildInfoPath := filepath.Join(f.getProjectDir(projectName), "project.buildinfo")
+	buildInfoPath := f.getBuildInfoFilePathFor(projectName)
 	err = f.userFS.WriteFileAsUser(buildInfoPath, buildInfoBytes, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create 'project.buildinfo' due to impossibility to write '%s': %w", buildInfoPath, err)

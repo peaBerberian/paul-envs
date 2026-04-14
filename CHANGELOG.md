@@ -7,6 +7,7 @@
 - Remove `.env` and `compose.yaml` configuration in profit of `build.conf` and `run.conf` files whose influence (necessitate a re-build or not) is much clearer
 - make `mise` opt-out, not opt-in, as it is basically needed for fine-grained versions for language tooling
 - for languages `latest` now means the latest published stable version of a language, not whatever is present in Ubuntu's repositories
+- In the project config directory, put the internal `paul-envs` stuff in `.paul-envs` directory so it's given less importance than the actual config
 
 ### Features
 
