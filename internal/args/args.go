@@ -52,6 +52,8 @@ func ParseAndPrompt(args []string, cons *console.Console, filestor *files.FileSt
 		if err := promptMissing(cons, &cfg); err != nil {
 			return config.Config{}, err
 		}
+	} else if err := validateNoPromptConfig(&cfg); err != nil {
+		return config.Config{}, err
 	}
 
 	// Final validation for mise requirement
@@ -278,6 +280,19 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	// TODO: sanitization?
 	cfg.Volumes = p.volumes
 
+	if cfg.InstallNode == "" {
+		cfg.InstallNode = config.VersionNone
+	}
+	if cfg.InstallRust == "" {
+		cfg.InstallRust = config.VersionNone
+	}
+	if cfg.InstallPython == "" {
+		cfg.InstallPython = config.VersionNone
+	}
+	if cfg.InstallGo == "" {
+		cfg.InstallGo = config.VersionNone
+	}
+
 	return cfg, nil
 }
 
@@ -480,6 +495,19 @@ func hasAnyTool(cfg *config.Config) bool {
 
 func needsExactVersion(version string) bool {
 	return version != "" && version != config.VersionNone && version != config.VersionLatest
+}
+
+func validateNoPromptConfig(cfg *config.Config) error {
+	if cfg.InstallMise {
+		return nil
+	}
+	if needsExactVersion(cfg.InstallNode) ||
+		needsExactVersion(cfg.InstallRust) ||
+		needsExactVersion(cfg.InstallPython) ||
+		needsExactVersion(cfg.InstallGo) {
+		return errors.New("exact language versions require Mise; remove --no-mise or use 'latest'/'none'")
+	}
+	return nil
 }
 
 // Prompt functions

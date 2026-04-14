@@ -55,6 +55,8 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 	runtimeTplData := RuntimeTemplateData{
 		Version:         "1.0.0",
 		ProjectHostPath: "/host/path",
+		Volumes:         []string{"./vol1:/data1:ro", "./vol2:/data2"},
+		Ports:           []string{"3000:3000", "8080:8080"},
 	}
 
 	err := store.CreateProjectFiles("testproject", buildTplData, runtimeTplData)
@@ -102,9 +104,10 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 	runChecks := []string{
 		`VERSION 1.0.0`,
 		`PATH /host/path`,
-		`# WORKDIR /home/dev/projects/example`,
-		`# VOLUME ~/code/shared:/home/dev/shared`,
-		`# PORT 3000:3000`,
+		`VOLUME ./vol1:/data1:ro`,
+		`VOLUME ./vol2:/data2`,
+		`PORT 3000:3000`,
+		`PORT 8080:8080`,
 	}
 	for _, check := range runChecks {
 		if !strings.Contains(string(runCtnt), check) {

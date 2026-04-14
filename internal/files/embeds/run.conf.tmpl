@@ -20,12 +20,24 @@ PATH {{.ProjectHostPath}}
 
 # Optional extra bind mounts. Repeat as needed.
 # The value is forwarded directly to the container engine's --volume flag.
+{{- if .Volumes}}
+{{- range .Volumes}}
+VOLUME {{.}}
+{{- end}}
+{{- else}}
 # VOLUME ~/code/shared:/home/dev/shared
+{{- end}}
 
 # Optional published ports. Repeat as needed.
 # The value is forwarded directly to the container engine's --publish flag.
+{{- if .Ports}}
+{{- range .Ports}}
+PORT {{.}}
+{{- end}}
+{{- else}}
 # PORT 3000:3000
+{{- end}}
 
-# Runtime config format version.
+# Internal file format version used by paul-envs for compatibility checks.
 # DO NOT EDIT
 VERSION {{.Version}}

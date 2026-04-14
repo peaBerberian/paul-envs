@@ -62,6 +62,8 @@ type BuildTemplateData struct {
 type RuntimeTemplateData struct {
 	Version         string
 	ProjectHostPath string
+	Volumes         []string
+	Ports           []string
 }
 
 // Holds the parsed values from the `project.lock` file associated to each project

@@ -72,6 +72,8 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 	runtimeData := files.RuntimeTemplateData{
 		Version:         versions.RuntimeConfigVersion.ToString(),
 		ProjectHostPath: utils.EscapeEnvValue(cfg.ProjectHostPath),
+		Volumes:         cfg.Volumes,
+		Ports:           runtimePorts(cfg.Ports),
 	}
 
 	err := filestore.CreateProjectFiles(cfg.ProjectName, buildData, runtimeData)
@@ -79,6 +81,14 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 		return fmt.Errorf("failed to create project files: %w", err)
 	}
 	return nil
+}
+
+func runtimePorts(ports []uint16) []string {
+	out := make([]string, 0, len(ports))
+	for _, port := range ports {
+		out = append(out, fmt.Sprintf("%d:%d", port, port))
+	}
+	return out
 }
 
 func printNextSteps(cfg *config.Config, dotfilesDir string, filestore *files.FileStore, console *console.Console) {
