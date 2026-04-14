@@ -6,6 +6,7 @@
 
 - make `mise` opt-out, not opt-in, as it is basically needed for fine-grained versions for language tooling
 - tui: separate agent step from tools step to be more readable
+- for languages `latest` now means the latest published stable version of a language, not whatever is present in Ubuntu's repositories
 
 ### Bug fixes
 
