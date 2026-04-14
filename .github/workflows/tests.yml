@@ -304,14 +304,18 @@ jobs:
           ./paul-envs create ./test-project-no-mise \
             --no-prompt \
             --name test-all-langs-no-mise \
-            --nodejs 20.10.0 \
-            --rust 1.75.0 \
-            --python 3.12.0 \
-            --go 1.21.5 \
+            --nodejs latest \
+            --rust latest \
+            --python latest \
+            --go latest \
             --no-mise
 
           # Verify mise is disabled
           grep '^INSTALL_MISE false$' "$PROJECTS_PATH"/test-all-langs-no-mise/build.conf
+          grep '^INSTALL_NODE latest$' "$PROJECTS_PATH"/test-all-langs-no-mise/build.conf
+          grep '^INSTALL_RUST latest$' "$PROJECTS_PATH"/test-all-langs-no-mise/build.conf
+          grep '^INSTALL_PYTHON latest$' "$PROJECTS_PATH"/test-all-langs-no-mise/build.conf
+          grep '^INSTALL_GO latest$' "$PROJECTS_PATH"/test-all-langs-no-mise/build.conf
 
       - name: Test all tools
         shell: bash
