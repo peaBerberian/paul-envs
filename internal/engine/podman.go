@@ -35,9 +35,6 @@ func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntr
 	}
 
 	cmdArgs := []string{"build"}
-	if shouldUsePodmanKeepID() {
-		cmdArgs = append(cmdArgs, "--userns=keep-id")
-	}
 	cmdArgs = append(cmdArgs,
 		"--file", projectDockerfilePath(project),
 		"--tag", projectImageName(project.ProjectName),
