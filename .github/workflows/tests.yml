@@ -97,12 +97,12 @@ jobs:
             echo "PROJECTS_PATH=${XDG_DATA_HOME:-$HOME/.local/share}/paul-envs/projects" >> $GITHUB_ENV
           fi
 
-      - name: Verify path normalization in .env files
+      - name: Verify path normalization in run.conf files
         shell: bash
         run: |
-          # Check that paths were properly written to .env
-          cat "$PROJECTS_PATH"/test-absolute-path/.env
-          grep "PROJECT_PATH=" "$PROJECTS_PATH"/test-absolute-path/.env
+          # Check that paths were properly written to run.conf
+          cat "$PROJECTS_PATH"/test-absolute-path/run.conf
+          grep "^PATH " "$PROJECTS_PATH"/test-absolute-path/run.conf
 
   validation-tests:
     name: Input Validation Tests
@@ -296,7 +296,7 @@ jobs:
             --go 1.21.5
 
           # Verify mise is enabled
-          grep 'INSTALL_MISE="true"' "$PROJECTS_PATH"/test-all-langs/.env
+          grep '^INSTALL_MISE true$' "$PROJECTS_PATH"/test-all-langs/build.conf
 
       - name: Test all languages without mise
         shell: bash
@@ -311,7 +311,7 @@ jobs:
             --no-mise
 
           # Verify mise is disabled
-          grep 'INSTALL_MISE="false"' "$PROJECTS_PATH"/test-all-langs-no-mise/.env
+          grep '^INSTALL_MISE false$' "$PROJECTS_PATH"/test-all-langs-no-mise/build.conf
 
       - name: Test all tools
         shell: bash
@@ -331,17 +331,17 @@ jobs:
             --firefox
 
           # Verify all tools are enabled
-          grep 'INSTALL_NEOVIM="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_STARSHIP="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_ATUIN="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_MISE="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_ZELLIJ="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_JUJUTSU="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_DELTA="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_OPEN_CODE="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_CLAUDE_CODE="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_CODEX="true"' "$PROJECTS_PATH"/test-all-tools/.env
-          grep 'INSTALL_FIREFOX="true"' "$PROJECTS_PATH"/test-all-tools/.env
+          grep '^INSTALL_NEOVIM true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_STARSHIP true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_ATUIN true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_MISE true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_ZELLIJ true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_JUJUTSU true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_DELTA true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_OPEN_CODE true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_CLAUDE_CODE true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_CODEX true$' "$PROJECTS_PATH"/test-all-tools/build.conf
+          grep '^INSTALL_FIREFOX true$' "$PROJECTS_PATH"/test-all-tools/build.conf
 
       - name: Test multiple ports
         shell: bash
@@ -355,12 +355,12 @@ jobs:
             --port 8080 \
             --port 9000
 
-          # Verify all ports in compose
-          grep "3000:3000" "$PROJECTS_PATH"/test-many-ports/compose.yaml
-          grep "5432:5432" "$PROJECTS_PATH"/test-many-ports/compose.yaml
-          grep "6379:6379" "$PROJECTS_PATH"/test-many-ports/compose.yaml
-          grep "8080:8080" "$PROJECTS_PATH"/test-many-ports/compose.yaml
-          grep "9000:9000" "$PROJECTS_PATH"/test-many-ports/compose.yaml
+          # Verify all ports in run.conf
+          grep "^PORT 3000:3000$" "$PROJECTS_PATH"/test-many-ports/run.conf
+          grep "^PORT 5432:5432$" "$PROJECTS_PATH"/test-many-ports/run.conf
+          grep "^PORT 6379:6379$" "$PROJECTS_PATH"/test-many-ports/run.conf
+          grep "^PORT 8080:8080$" "$PROJECTS_PATH"/test-many-ports/run.conf
+          grep "^PORT 9000:9000$" "$PROJECTS_PATH"/test-many-ports/run.conf
 
       - name: Test multiple volumes
         shell: bash
@@ -373,10 +373,10 @@ jobs:
             --volume ./vol2:/data2 \
             --volume ./vol3:/data3:ro
 
-          # Verify volumes in compose
-          grep "/data1:ro" "$PROJECTS_PATH"/test-many-volumes/compose.yaml
-          grep "/data2" "$PROJECTS_PATH"/test-many-volumes/compose.yaml
-          grep "/data3:ro" "$PROJECTS_PATH"/test-many-volumes/compose.yaml
+          # Verify volumes in run.conf
+          grep "^VOLUME .*:/data1:ro$" "$PROJECTS_PATH"/test-many-volumes/run.conf
+          grep "^VOLUME .*:/data2$" "$PROJECTS_PATH"/test-many-volumes/run.conf
+          grep "^VOLUME .*:/data3:ro$" "$PROJECTS_PATH"/test-many-volumes/run.conf
 
       - name: Test kitchen sink configuration
         shell: bash
@@ -414,11 +414,11 @@ jobs:
             --port 8080
 
           # Verify critical settings
-          grep 'HOST_UID="1500"' "$PROJECTS_PATH"/test-kitchen-sink/.env
-          grep 'USERNAME="kitchen"' "$PROJECTS_PATH"/test-kitchen-sink/.env
-          grep 'USER_SHELL="fish"' "$PROJECTS_PATH"/test-kitchen-sink/.env
-          grep 'INSTALL_MISE="true"' "$PROJECTS_PATH"/test-kitchen-sink/.env
-          grep 'Kitchen Sink' "$PROJECTS_PATH"/test-kitchen-sink/.env
+          grep '^HOST_UID 1500$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
+          grep '^USERNAME kitchen$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
+          grep '^USER_SHELL fish$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
+          grep '^INSTALL_MISE true$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
+          grep '^GIT_AUTHOR_NAME Kitchen Sink$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
   unit-tests:
     name: Unit tests - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
