@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	versions "github.com/peaberberian/paul-envs/internal"
 	"github.com/peaberberian/paul-envs/internal/args"
 	"github.com/peaberberian/paul-envs/internal/config"
 	"github.com/peaberberian/paul-envs/internal/console"
@@ -39,6 +40,7 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 	// TODO: Should those template definitions be moved to the `FileStore` code?
 	// It could only take the Config as argument
 	buildData := files.BuildTemplateData{
+		Version:           versions.BuildConfigVersion.ToString(),
 		HostUID:           utils.EscapeEnvValue(cfg.UID),
 		HostGID:           utils.EscapeEnvValue(cfg.GID),
 		Username:          utils.EscapeEnvValue(cfg.Username),
@@ -68,6 +70,7 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 	}
 
 	runtimeData := files.RuntimeTemplateData{
+		Version:         versions.RuntimeConfigVersion.ToString(),
 		ProjectHostPath: utils.EscapeEnvValue(cfg.ProjectHostPath),
 	}
 

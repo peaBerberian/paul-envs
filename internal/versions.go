@@ -31,6 +31,20 @@ var DockerfileVersion = utils.Version{
 	Patch: 0,
 }
 
+// Format of generated build.conf files.
+var BuildConfigVersion = utils.Version{
+	Major: 1,
+	Minor: 0,
+	Patch: 0,
+}
+
+// Format of generated run.conf files.
+var RuntimeConfigVersion = utils.Version{
+	Major: 1,
+	Minor: 0,
+	Patch: 0,
+}
+
 // Format of the "project.lock" files: the lockfiles of the various projects.
 var ProjectLockVersion = utils.Version{
 	Major: 1,

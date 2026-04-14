@@ -26,6 +26,7 @@ func writeTempConf(t *testing.T, content string) string {
 // minimalValidConf returns the minimum valid build.conf content: all required
 // directives set, all bool/version directives at their default off values.
 const minimalValidConf = `HOST_UID 1000
+VERSION 1.0.0
 HOST_GID 1000
 USERNAME dev
 USER_SHELL bash
@@ -76,6 +77,7 @@ func TestLoadBuildConfig_CommentsAndBlanksIgnored(t *testing.T) {
 	content := `# This is a comment
 
 HOST_UID 1000
+VERSION 1.0.0
 # Another comment
 HOST_GID 1000
 USERNAME dev
@@ -140,6 +142,7 @@ func TestLoadBuildConfig_BoolDirectives(t *testing.T) {
 	// override INSTALL_NEOVIM to true by replacing the line
 	// (writeTempConf just needs a valid file, so build a fresh one)
 	content2 := `HOST_UID 1000
+VERSION 1.0.0
 HOST_GID 1000
 USERNAME dev
 USER_SHELL bash
@@ -239,6 +242,7 @@ func buildConfWithOverride(t *testing.T, directive, value string) string {
 // minimalConf returns the baseline configuration used in tests.
 func minimalConf() string {
 	return `HOST_UID 1000
+VERSION 1.0.0
 HOST_GID 1000
 USERNAME dev
 USER_SHELL bash
@@ -287,6 +291,16 @@ func TestLoadBuildConfig_UnknownDirectiveIgnored(t *testing.T) {
 	if _, ok := cfg.Args["UNKNOWN_THING"]; ok {
 		t.Fatal("unknown directive should not be forwarded as a build arg")
 	}
+}
+
+func TestLoadBuildConfig_MissingVersion(t *testing.T) {
+	content := confWithoutDirective(t, minimalValidConf, "VERSION")
+	path := writeTempConf(t, content)
+	_, err := LoadBuildConfig(path)
+	if err == nil {
+		t.Fatal("expected error for missing VERSION, got nil")
+	}
+	assertErrorContains(t, err, "missing required directive VERSION")
 }
 
 func TestLoadBuildConfig_DuplicateDirective(t *testing.T) {

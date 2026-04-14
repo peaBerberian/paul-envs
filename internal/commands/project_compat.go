@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	versions "github.com/peaberberian/paul-envs/internal"
+	"github.com/peaberberian/paul-envs/internal/config"
 	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/files"
 )
@@ -20,6 +21,21 @@ func ensureProjectCompatible(projectName string, filestore *files.FileStore, con
 		}
 		return offerProjectReinitialize(projectName, filestore, console,
 			fmt.Sprintf("This project was created with an incompatible format (%s).", reason))
+	}
+
+	if _, err := config.LoadBuildConfig(filestore.GetProjectBuildConfigPath(projectName)); err != nil {
+		if strings.Contains(err.Error(), "incompatible VERSION") || strings.Contains(err.Error(), "missing required directive VERSION") {
+			return offerProjectReinitialize(projectName, filestore, console,
+				fmt.Sprintf("This project uses an incompatible build.conf format (%s).", err))
+		}
+		return fmt.Errorf("invalid build.conf: %w", err)
+	}
+	if _, err := config.LoadRuntimeConfig(filestore.GetProjectRuntimeConfigPath(projectName)); err != nil {
+		if strings.Contains(err.Error(), "incompatible VERSION") || strings.Contains(err.Error(), "missing required directive VERSION") {
+			return offerProjectReinitialize(projectName, filestore, console,
+				fmt.Sprintf("This project uses an incompatible run.conf format (%s).", err))
+		}
+		return fmt.Errorf("invalid run.conf: %w", err)
 	}
 
 	_, err = filestore.ReadBuildInfo(projectName)

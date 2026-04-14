@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/peaberberian/paul-envs/internal/utils"
 )
 
 // BuildConfig holds the validated build-time arguments to pass to the
@@ -12,7 +14,8 @@ import (
 // exactly as they appear in build.conf. The engine layer forwards each entry
 // as a --build-arg KEY=VALUE flag without further interpretation.
 type BuildConfig struct {
-	Args map[string]string
+	Version utils.Version
+	Args    map[string]string
 }
 
 // requiredBuildDirectives must be present in every build.conf.
@@ -78,6 +81,10 @@ func LoadBuildConfig(path string) (BuildConfig, error) {
 	if err != nil {
 		return BuildConfig{}, fmt.Errorf("load build config %s: %w", filepath.Base(path), err)
 	}
+	version, directives, err := extractVersion(path, directives, expectedBuildConfigVersion())
+	if err != nil {
+		return BuildConfig{}, err
+	}
 
 	args := make(map[string]string, len(directives))
 
@@ -111,7 +118,7 @@ func LoadBuildConfig(path string) (BuildConfig, error) {
 		}
 	}
 
-	return BuildConfig{Args: args}, nil
+	return BuildConfig{Version: version, Args: args}, nil
 }
 
 // validateBuildValue checks that value is acceptable for the given directive.

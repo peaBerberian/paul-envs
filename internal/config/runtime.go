@@ -3,10 +3,13 @@ package config
 import (
 	"fmt"
 	"path/filepath"
+
+	"github.com/peaberberian/paul-envs/internal/utils"
 )
 
 // RuntimeConfig holds the parsed contents of a run.conf file.
 type RuntimeConfig struct {
+	Version     utils.Version
 	ProjectPath string
 	Volumes     []string
 	Ports       []string
@@ -21,8 +24,12 @@ func LoadRuntimeConfig(path string) (RuntimeConfig, error) {
 	if err != nil {
 		return RuntimeConfig{}, fmt.Errorf("load runtime config %s: %w", filepath.Base(path), err)
 	}
+	version, directives, err := extractVersion(path, directives, expectedRuntimeConfigVersion())
+	if err != nil {
+		return RuntimeConfig{}, err
+	}
 
-	var cfg RuntimeConfig
+	cfg := RuntimeConfig{Version: version}
 
 	for _, d := range directives {
 		switch d.Key {
@@ -35,7 +42,7 @@ func LoadRuntimeConfig(path string) (RuntimeConfig, error) {
 		case "WORKDIR":
 			cfg.WorkDir = d.Value
 		default:
-			continue
+			return RuntimeConfig{}, fmt.Errorf("%s: unknown directive %q", filepath.Base(path), d.Key)
 		}
 	}
 

@@ -23,6 +23,7 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 	}
 
 	buildTplData := BuildTemplateData{
+		Version:           "1.0.0",
 		HostUID:           "1000",
 		HostGID:           "1000",
 		Username:          "testuser",
@@ -52,6 +53,7 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 	}
 
 	runtimeTplData := RuntimeTemplateData{
+		Version:         "1.0.0",
 		ProjectHostPath: "/host/path",
 	}
 
@@ -78,6 +80,7 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	buildChecks := []string{
+		`VERSION 1.0.0`,
 		`USERNAME testuser`,
 		`USER_SHELL bash`,
 		`INSTALL_NODE latest`,
@@ -97,6 +100,7 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	runChecks := []string{
+		`VERSION 1.0.0`,
 		`PATH /host/path`,
 		`# WORKDIR /home/dev/projects/example`,
 		`# VOLUME ~/code/shared:/home/dev/shared`,

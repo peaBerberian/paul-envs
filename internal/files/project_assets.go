@@ -20,6 +20,7 @@ import (
 	"time"
 
 	versions "github.com/peaberberian/paul-envs/internal"
+	"github.com/peaberberian/paul-envs/internal/config"
 	"github.com/peaberberian/paul-envs/internal/utils"
 )
 
@@ -28,6 +29,7 @@ var assets embed.FS
 
 // Data needed to construct a project's `build.conf` file.
 type BuildTemplateData struct {
+	Version           string
 	HostUID           string
 	HostGID           string
 	Username          string
@@ -58,6 +60,7 @@ type BuildTemplateData struct {
 
 // Data needed to construct a project's `run.conf` file.
 type RuntimeTemplateData struct {
+	Version         string
 	ProjectHostPath string
 }
 
@@ -77,6 +80,10 @@ type buildState struct {
 	builtBy string
 	// The hash of the `build.conf` file the last time the project has been built
 	buildConfigHash string
+	// The version of the build.conf file used for the last build
+	buildConfigVersion string
+	// The version of the run.conf file used for the last build
+	runtimeConfigVersion string
 	// The last time it was built according to this tool
 	builtAt time.Time
 	// The name of the container engine which produced the last build (e.g. "docker")
@@ -321,6 +328,14 @@ func (f *FileStore) RefreshBuildInfoFile(projectName string, engineName string, 
 	if err != nil {
 		return fmt.Errorf("failed to create 'project.buildinfo' file: %w", err)
 	}
+	buildCfg, err := config.LoadBuildConfig(f.GetProjectBuildConfigPath(projectName))
+	if err != nil {
+		return fmt.Errorf("failed to create 'project.buildinfo' file due to invalid build.conf: %w", err)
+	}
+	runtimeCfg, err := config.LoadRuntimeConfig(f.GetProjectRuntimeConfigPath(projectName))
+	if err != nil {
+		return fmt.Errorf("failed to create 'project.buildinfo' file due to invalid run.conf: %w", err)
+	}
 	buildConfigPath := f.GetProjectBuildConfigPath(projectName)
 	buildConfigBytes, err := os.ReadFile(buildConfigPath)
 	if err != nil {
@@ -332,6 +347,8 @@ func (f *FileStore) RefreshBuildInfoFile(projectName string, engineName string, 
 		version:                versions.BuildInfoVersion,
 		builtBy:                machineId,
 		buildConfigHash:        buildConfigHash,
+		buildConfigVersion:     buildCfg.Version.ToString(),
+		runtimeConfigVersion:   runtimeCfg.Version.ToString(),
 		builtAt:                now,
 		containerEngine:        engineName,
 		containerEngineVersion: engineVersion,
@@ -382,6 +399,14 @@ func (filestore *FileStore) ReadBuildInfo(projectName string) (*buildState, erro
 			bState.buildConfigHash = v
 			continue
 		}
+		if v, ok := strings.CutPrefix(line, "BUILD_CONFIG_VERSION="); ok {
+			bState.buildConfigVersion = v
+			continue
+		}
+		if v, ok := strings.CutPrefix(line, "RUNTIME_CONFIG_VERSION="); ok {
+			bState.runtimeConfigVersion = v
+			continue
+		}
 		if v, ok := strings.CutPrefix(line, "CONTAINER_ENGINE="); ok {
 			bState.containerEngine = v
 			continue
@@ -425,6 +450,12 @@ func (filestore *FileStore) ReadBuildInfo(projectName string) (*buildState, erro
 	}
 	if bState.buildConfigHash == "" {
 		return nil, errors.New("invalid 'project.buildinfo': no BUILD_CONFIG")
+	}
+	if bState.buildConfigVersion == "" {
+		return nil, errors.New("invalid 'project.buildinfo': no BUILD_CONFIG_VERSION")
+	}
+	if bState.runtimeConfigVersion == "" {
+		return nil, errors.New("invalid 'project.buildinfo': no RUNTIME_CONFIG_VERSION")
 	}
 	return &bState, nil
 }
@@ -498,12 +529,16 @@ func formatBuildInfo(bInfo buildState) ([]byte, error) {
 		"VERSION=%s\n"+
 			"BUILT_BY=%s\n"+
 			"BUILD_CONFIG=%s\n"+
+			"BUILD_CONFIG_VERSION=%s\n"+
+			"RUNTIME_CONFIG_VERSION=%s\n"+
 			"LAST_BUILT_AT=%s\n"+
 			"CONTAINER_ENGINE=%s\n"+
 			"CONTAINER_ENGINE_VERSION=%s\n",
 		bInfo.version.ToString(),
 		bInfo.builtBy,
 		bInfo.buildConfigHash,
+		bInfo.buildConfigVersion,
+		bInfo.runtimeConfigVersion,
 		bInfo.builtAt.Format(time.RFC3339),
 		bInfo.containerEngine,
 		bInfo.containerEngineVersion,

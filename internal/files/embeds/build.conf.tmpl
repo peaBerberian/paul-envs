@@ -25,7 +25,8 @@ USER_SHELL {{.Shell}}
 # Language/toolchain versions.
 # Values can be:
 # - if 'none': don't install it
-# - if 'latest': Install the last stable version
+# - if 'latest': Install the latest version if `mise` is enabled, otherwise use
+#   the non-`mise` fallback defined by the Dockerfile for that language
 # - If anything else: The exact version to install (e.g. "1.21.5").
 #   That last type of value will only work if INSTALL_MISE is 'true'.
 INSTALL_NODE {{.InstallNode}}
@@ -71,3 +72,7 @@ GIT_AUTHOR_EMAIL {{.GitEmail}}
 # permission mismatches on mounted paths.
 HOST_UID {{.HostUID}}
 HOST_GID {{.HostGID}}
+
+# Build config format version.
+# DO NOT EDIT
+VERSION {{.Version}}

@@ -22,7 +22,7 @@ func writeConf(t *testing.T, content string) string {
 }
 
 func TestLoadRuntimeConfig_Minimal(t *testing.T) {
-	path := writeConf(t, "PATH /srv/myproject\n")
+	path := writeConf(t, "VERSION 1.0.0\nPATH /srv/myproject\n")
 	cfg, err := LoadRuntimeConfig(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -43,6 +43,7 @@ func TestLoadRuntimeConfig_Minimal(t *testing.T) {
 
 func TestLoadRuntimeConfig_AllDirectives(t *testing.T) {
 	content := `PATH /srv/myproject
+VERSION 1.0.0
 VOLUME /host/data:/container/data
 VOLUME /host/logs:/container/logs
 PORT 8080:80
@@ -71,6 +72,7 @@ WORKDIR /container/data
 
 func TestLoadRuntimeConfig_CommentsAndBlanksIgnored(t *testing.T) {
 	content := `
+VERSION 1.0.0
 # project root
 PATH /srv/myproject
 
@@ -91,6 +93,7 @@ func TestLoadRuntimeConfig_TildeInVolume(t *testing.T) {
 	// ~/ in a VOLUME value should be expanded by the underlying parser.
 	// We only assert that the result does NOT start with '~'.
 	content := "PATH /srv/myproject\nVOLUME ~/data:/container/data\n"
+	content = "VERSION 1.0.0\n" + content
 	cfg, err := LoadRuntimeConfig(writeConf(t, content))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -107,6 +110,7 @@ func TestLoadRuntimeConfig_LastPathWins(t *testing.T) {
 	// If PATH appears more than once the last value should win, consistent with
 	// how most config formats behave when a scalar directive is repeated.
 	content := "PATH /first\nPATH /second\n"
+	content = "VERSION 1.0.0\n" + content
 	cfg, err := LoadRuntimeConfig(writeConf(t, content))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -118,6 +122,7 @@ func TestLoadRuntimeConfig_LastPathWins(t *testing.T) {
 
 func TestLoadRuntimeConfig_LastWorkdirWins(t *testing.T) {
 	content := "PATH /srv/myproject\nWORKDIR /first\nWORKDIR /second\n"
+	content = "VERSION 1.0.0\n" + content
 	cfg, err := LoadRuntimeConfig(writeConf(t, content))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -129,6 +134,7 @@ func TestLoadRuntimeConfig_LastWorkdirWins(t *testing.T) {
 
 func TestLoadRuntimeConfig_MissingPath(t *testing.T) {
 	content := "VOLUME /host/data:/container/data\nPORT 8080:80\n"
+	content = "VERSION 1.0.0\n" + content
 	_, err := LoadRuntimeConfig(writeConf(t, content))
 	if err == nil {
 		t.Fatal("expected error for missing PATH, got nil")
@@ -142,14 +148,18 @@ func TestLoadRuntimeConfig_EmptyFile(t *testing.T) {
 	}
 }
 
-func TestLoadRuntimeConfig_UnknownDirectiveIgnored(t *testing.T) {
-	content := "PATH /srv/myproject\nFOO bar\n"
-	cfg, err := LoadRuntimeConfig(writeConf(t, content))
-	if err != nil {
-		t.Fatalf("unexpected error for unknown directive: %v", err)
+func TestLoadRuntimeConfig_UnknownDirective(t *testing.T) {
+	content := "VERSION 1.0.0\nPATH /srv/myproject\nFOO bar\n"
+	_, err := LoadRuntimeConfig(writeConf(t, content))
+	if err == nil {
+		t.Fatal("expected error for unknown directive, got nil")
 	}
-	if cfg.ProjectPath != "/srv/myproject" {
-		t.Fatalf("ProjectPath: want /srv/myproject, got %q", cfg.ProjectPath)
+}
+
+func TestLoadRuntimeConfig_MissingVersion(t *testing.T) {
+	_, err := LoadRuntimeConfig(writeConf(t, "PATH /srv/myproject\n"))
+	if err == nil {
+		t.Fatal("expected error for missing VERSION, got nil")
 	}
 }
 
