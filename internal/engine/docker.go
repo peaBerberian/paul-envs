@@ -8,46 +8,107 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/peaberberian/paul-envs/internal/files"
+	"golang.org/x/term"
 )
 
-// Implements `ContainerEngine` for docker compose
+// Implements `ContainerEngine` for Docker.
 type DockerEngine struct{}
 
 func newDocker(ctx context.Context) (*DockerEngine, error) {
-	cmd := exec.CommandContext(ctx, "docker", "compose", "version")
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("docker compose command not found: %w", err)
+	if _, err := exec.LookPath("docker"); err != nil {
+		return nil, fmt.Errorf("docker command not found: %w", err)
 	}
 	return &DockerEngine{}, nil
 }
 
 func (c *DockerEngine) BuildImage(ctx context.Context, project files.ProjectEntry, relativeDotfilesDir string) error {
-	cmd := exec.CommandContext(ctx, "docker", "compose", "-f", project.ComposeFilePath, "--env-file", project.EnvFilePath, "build")
-	envVars := append(os.Environ(),
-		"COMPOSE_PROJECT_NAME=paulenv-"+project.ProjectName,
-		"DOTFILES_DIR="+relativeDotfilesDir,
-	)
-	cmd.Env = envVars
+	buildCfg, err := loadBuildConfig(project)
+	if err != nil {
+		return err
+	}
+
+	cmdArgs := []string{
+		"build",
+		"--file", projectDockerfilePath(project),
+		"--tag", projectImageName(project.ProjectName),
+	}
+
+	keys := make([]string, 0, len(buildCfg.Args))
+	for key := range buildCfg.Args {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		cmdArgs = append(cmdArgs, "--build-arg", fmt.Sprintf("%s=%s", key, buildCfg.Args[key]))
+	}
+	cmdArgs = append(cmdArgs, "--build-arg", "DOTFILES_DIR="+relativeDotfilesDir)
+	cmdArgs = append(cmdArgs, projectBaseDataDir(project))
+
+	cmd := exec.CommandContext(ctx, "docker", cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		if pErr := c.checkPermissions(ctx); pErr != nil {
 			return pErr
 		}
-		return fmt.Errorf("Build failed: %w", err)
+		return fmt.Errorf("build failed: %w", err)
 	}
 	return nil
 }
 
 func (c *DockerEngine) RunContainer(ctx context.Context, project files.ProjectEntry, args []string) error {
-	cmdArgs := []string{"compose", "-f", project.ComposeFilePath, "--env-file", project.EnvFilePath, "run", "--rm", "paulenv"}
+	buildCfg, err := loadBuildConfig(project)
+	if err != nil {
+		return err
+	}
+	runtimeCfg, err := loadRuntimeConfig(project)
+	if err != nil {
+		return err
+	}
+
+	username := buildCfg.Args["USERNAME"]
+	projectMount := projectMountTarget(username, project.ProjectName)
+	workDir := runtimeCfg.WorkDir
+	if workDir == "" {
+		workDir = projectMount
+	}
+
+	if err := c.ensureVolumesExist(ctx, "paulenv-shared-cache", projectLocalVolumeName(project.ProjectName)); err != nil {
+		return err
+	}
+
+	cmdArgs := []string{
+		"run",
+		"--rm",
+		"--init",
+		"--name", projectContainerName(project.ProjectName),
+		"--workdir", workDir,
+		"--volume", runtimeCfg.ProjectPath + ":" + projectMount,
+		"--volume", "paulenv-shared-cache:/home/" + username + "/.container-cache",
+		"--volume", projectLocalVolumeName(project.ProjectName) + ":/home/" + username + "/.container-local",
+	}
+
+	for _, volume := range runtimeCfg.Volumes {
+		cmdArgs = append(cmdArgs, "--volume", volume)
+	}
+	for _, port := range runtimeCfg.Ports {
+		cmdArgs = append(cmdArgs, "--publish", port)
+	}
+
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		cmdArgs = append(cmdArgs, "--tty", "--interactive")
+	}
+
+	cmdArgs = append(cmdArgs, projectImageName(project.ProjectName))
 	cmdArgs = append(cmdArgs, args...)
+
 	cmd := exec.CommandContext(ctx, "docker", cmdArgs...)
-	cmd.Env = append(os.Environ(), "COMPOSE_PROJECT_NAME=paulenv-"+project.ProjectName)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -55,12 +116,17 @@ func (c *DockerEngine) RunContainer(ctx context.Context, project files.ProjectEn
 		if pErr := c.checkPermissions(ctx); pErr != nil {
 			return pErr
 		}
-		return fmt.Errorf("Run failed: %w", err)
+		return fmt.Errorf("run failed: %w", err)
 	}
 	return nil
 }
+
 func (c *DockerEngine) JoinContainer(ctx context.Context, containerInfo ContainerInfo, args []string) error {
-	cmdArgs := []string{"exec", "-it", containerInfo.ContainerId, "/usr/local/bin/entrypoint.sh"}
+	cmdArgs := []string{"exec"}
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		cmdArgs = append(cmdArgs, "-it")
+	}
+	cmdArgs = append(cmdArgs, containerInfo.ContainerId, "/usr/local/bin/entrypoint.sh")
 	cmdArgs = append(cmdArgs, args...)
 	cmd := exec.CommandContext(ctx, "docker", cmdArgs...)
 	cmd.Stdin = os.Stdin
@@ -76,7 +142,7 @@ func (c *DockerEngine) JoinContainer(ctx context.Context, containerInfo Containe
 }
 
 func (c *DockerEngine) HasBeenBuilt(ctx context.Context, projectName string) (bool, error) {
-	imageName := fmt.Sprintf("paulenv:%s", projectName)
+	imageName := projectImageName(projectName)
 	cmd := exec.CommandContext(ctx, "docker", "image", "inspect", imageName)
 	err := cmd.Run()
 
@@ -84,14 +150,9 @@ func (c *DockerEngine) HasBeenBuilt(ctx context.Context, projectName string) (bo
 		if pErr := c.checkPermissions(ctx); pErr != nil {
 			return false, pErr
 		}
-		// Check if it's a "not found" error vs other error
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			if exitErr.ExitCode() == 1 {
-				// Image doesn't exist
-				return false, nil
-			}
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			return false, nil
 		}
-		// Other error
 		return false, err
 	}
 
@@ -104,12 +165,11 @@ func (c *DockerEngine) Info(ctx context.Context) (EngineInfo, error) {
 	if err != nil {
 		return EngineInfo{}, fmt.Errorf("failed to obtain docker version: %w", err)
 	}
-	parsed := strings.TrimSpace(fmt.Sprintf("%s", output))
+	parsed := strings.TrimSpace(string(output))
 	re := regexp.MustCompile(`Docker version ([0-9]+\.[0-9]+\.[0-9]+)`)
-	matches := re.FindStringSubmatch(string(parsed))
+	matches := re.FindStringSubmatch(parsed)
 	if len(matches) > 1 {
-		version := matches[1] // "24.0.7"
-		return EngineInfo{Version: version, Name: "docker"}, nil
+		return EngineInfo{Version: matches[1], Name: "docker"}, nil
 	}
 	return EngineInfo{}, fmt.Errorf("failed to obtain docker version, unknown version format: %s", parsed)
 }
@@ -121,16 +181,15 @@ func (c *DockerEngine) CreateVolume(ctx context.Context, name string) error {
 		if pErr := c.checkPermissions(ctx); pErr != nil {
 			return pErr
 		}
-		return fmt.Errorf("Failed to create shared volume: %w.", err)
+		return fmt.Errorf("failed to create volume %s: %w", name, err)
 	}
 	return nil
 }
 
 func (c *DockerEngine) GetImageInfo(ctx context.Context, projectName string) (*ImageInfo, error) {
-	imageName := fmt.Sprintf("paulenv:%s", projectName)
+	imageName := projectImageName(projectName)
 	info := &ImageInfo{ImageName: imageName, ProjectName: &projectName}
 
-	// Check if image exists and get build time
 	cmd := exec.CommandContext(ctx, "docker", "image", "inspect", imageName, "--format", "{{.Created}}")
 	output, err := cmd.Output()
 	if err != nil {
@@ -160,32 +219,37 @@ func (c *DockerEngine) ListContainers(ctx context.Context) ([]ContainerInfo, err
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	result := make([]ContainerInfo, 0, len(lines))
 	for _, s := range lines {
-		if s != "" {
-			parts := strings.SplitN(s, "\t", 3)
-			id := parts[0]
-			var image *string
-			var name *string
-			var projectName *string
-
-			if len(parts) > 1 {
-				image = &parts[1]
-			}
-			if len(parts) > 2 {
-				name = &parts[2]
-			}
-
-			if image != nil && strings.HasPrefix(*image, "paulenv:") && len(*image) > len("paulenv:") {
-				sliced := (*image)[len("paulenv:"):]
-				projectName = &sliced
-			}
-
-			result = append(result, ContainerInfo{
-				ProjectName:   projectName,
-				ContainerName: name,
-				ContainerId:   id,
-				ImageName:     image,
-			})
+		if s == "" {
+			continue
 		}
+		parts := strings.SplitN(s, "\t", 3)
+		id := parts[0]
+		var image *string
+		var name *string
+		var projectName *string
+
+		if len(parts) > 1 && parts[1] != "" {
+			image = &parts[1]
+		}
+		if len(parts) > 2 && parts[2] != "" {
+			name = &parts[2]
+		}
+		if image != nil {
+			projectName = projectNameFromImage(*image)
+		}
+		if projectName == nil && name != nil {
+			projectName = projectNameFromContainerName(*name)
+		}
+		if projectName == nil {
+			continue
+		}
+
+		result = append(result, ContainerInfo{
+			ProjectName:   projectName,
+			ContainerName: name,
+			ContainerId:   id,
+			ImageName:     image,
+		})
 	}
 	return result, nil
 }
@@ -218,7 +282,6 @@ func (c *DockerEngine) checkPermissions(ctx context.Context) error {
 	return nil
 }
 
-// List volumes currently known by this container engine
 func (c *DockerEngine) ListVolumes(ctx context.Context) ([]VolumeInfo, error) {
 	cmd := exec.CommandContext(ctx, "docker", "volume", "ls", "--filter", "name=paulenv-", "--format", "{{.Name}}")
 	output, err := cmd.Output()
@@ -232,12 +295,13 @@ func (c *DockerEngine) ListVolumes(ctx context.Context) ([]VolumeInfo, error) {
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	result := make([]VolumeInfo, 0, len(lines))
 	for _, volumeName := range lines {
-		if volumeName != "" {
-			result = append(result, VolumeInfo{
-				VolumeId:   volumeName,
-				VolumeName: volumeName,
-			})
+		if volumeName == "" || !isPaulEnvVolume(volumeName) {
+			continue
 		}
+		result = append(result, VolumeInfo{
+			VolumeId:   volumeName,
+			VolumeName: volumeName,
+		})
 	}
 	return result, nil
 }
@@ -253,7 +317,6 @@ func (c *DockerEngine) RemoveVolume(ctx context.Context, volume VolumeInfo) erro
 	return nil
 }
 
-// List networks currently known by this container engine
 func (c *DockerEngine) ListNetworks(ctx context.Context) ([]NetworkInfo, error) {
 	cmd := exec.CommandContext(ctx, "docker", "network", "ls", "--filter", "name=paulenv-", "--format", "{{.ID}}\t{{.Name}}")
 	output, err := cmd.Output()
@@ -267,38 +330,23 @@ func (c *DockerEngine) ListNetworks(ctx context.Context) ([]NetworkInfo, error) 
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	result := make([]NetworkInfo, 0, len(lines))
 	for _, line := range lines {
-		if line != "" {
-			parts := strings.SplitN(line, "\t", 2)
-			if len(parts) >= 2 {
-				networkId := parts[0]
-				networkName := parts[1]
-				var projectName *string
-
-				// Extract project name from network name if it follows the pattern "paulenv-{project}_default"
-				if strings.HasPrefix(networkName, "paulenv-") {
-					// Remove "paulenv-" prefix
-					withoutPrefix := networkName[len("paulenv-"):]
-					// Remove "_default" suffix if present
-					if strings.HasSuffix(withoutPrefix, "_default") {
-						sliced := withoutPrefix[:len(withoutPrefix)-len("_default")]
-						projectName = &sliced
-					} else {
-						projectName = &withoutPrefix
-					}
-				}
-
-				result = append(result, NetworkInfo{
-					NetworkId:   networkId,
-					NetworkName: networkName,
-					ProjectName: projectName,
-				})
-			}
+		if line == "" {
+			continue
 		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		projectName := projectNameFromContainerName(parts[1])
+		result = append(result, NetworkInfo{
+			NetworkId:   parts[0],
+			NetworkName: parts[1],
+			ProjectName: projectName,
+		})
 	}
 	return result, nil
 }
 
-// Remove network listed from this container engine
 func (c *DockerEngine) RemoveNetwork(ctx context.Context, network NetworkInfo) error {
 	cmd := exec.CommandContext(ctx, "docker", "network", "rm", network.NetworkId)
 	if err := cmd.Run(); err != nil {
@@ -310,21 +358,17 @@ func (c *DockerEngine) RemoveNetwork(ctx context.Context, network NetworkInfo) e
 	return nil
 }
 
-// Remove the `ContainerEngine`'s build cache from metadata linked to this
-// executable
 func (c *DockerEngine) PruneBuildCache(ctx context.Context) error {
-	// Prune build cache for paulenv images specifically
-	cmd := exec.CommandContext(ctx, "docker", "builder", "prune", "-f", "--filter", "label=paulenv=true", "-f")
+	cmd := exec.CommandContext(ctx, "docker", "builder", "prune", "-f", "--filter", "label=paulenv=true")
 	if err := cmd.Run(); err != nil {
 		if pErr := c.checkPermissions(ctx); pErr != nil {
 			return pErr
 		}
-		return fmt.Errorf("failed to prun build cache: %w", err)
+		return fmt.Errorf("failed to prune build cache: %w", err)
 	}
 	return nil
 }
 
-// List images currently known by this container engine
 func (c *DockerEngine) ListImages(ctx context.Context) ([]ImageInfo, error) {
 	cmd := exec.CommandContext(ctx, "docker", "images", "--filter", "reference=paulenv:*", "--format", "{{.Repository}}:{{.Tag}}\t{{.CreatedAt}}")
 	output, err := cmd.Output()
@@ -338,46 +382,30 @@ func (c *DockerEngine) ListImages(ctx context.Context) ([]ImageInfo, error) {
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	result := make([]ImageInfo, 0, len(lines))
 	for _, line := range lines {
-		if line != "" {
-			parts := strings.SplitN(line, "\t", 2)
-			imageName := parts[0]
-			var projectName *string
-			var builtAt *time.Time
-
-			// Extract project name from image name if it follows the pattern "paulenv:{project}"
-			if strings.HasPrefix(imageName, "paulenv:") && len(imageName) > len("paulenv:") {
-				sliced := imageName[len("paulenv:"):]
-				projectName = &sliced
-			}
-
-			// Parse build time if available
-			if len(parts) > 1 {
-				timeStr := strings.TrimSpace(parts[1])
-				// Docker's CreatedAt format can vary, try common formats
-				formats := []string{
-					"2006-01-02 15:04:05 -0700 MST",
-					time.RFC3339,
-					time.RFC3339Nano,
-				}
-				for _, format := range formats {
-					if parsedTime, err := time.Parse(format, timeStr); err == nil {
-						builtAt = &parsedTime
-						break
-					}
-				}
-			}
-
-			result = append(result, ImageInfo{
-				ImageName:   imageName,
-				ProjectName: projectName,
-				BuiltAt:     builtAt,
-			})
+		if line == "" {
+			continue
 		}
+		parts := strings.SplitN(line, "\t", 2)
+		imageName := parts[0]
+		projectName := projectNameFromImage(imageName)
+		if projectName == nil {
+			continue
+		}
+
+		var builtAt *time.Time
+		if len(parts) > 1 {
+			builtAt = parseCreatedAt(parts[1])
+		}
+
+		result = append(result, ImageInfo{
+			ImageName:   imageName,
+			ProjectName: projectName,
+			BuiltAt:     builtAt,
+		})
 	}
 	return result, nil
 }
 
-// Remove image from this container engine
 func (c *DockerEngine) RemoveImage(ctx context.Context, image ImageInfo) error {
 	cmd := exec.CommandContext(ctx, "docker", "rmi", "-f", image.ImageName)
 	if err := cmd.Run(); err != nil {
@@ -387,4 +415,37 @@ func (c *DockerEngine) RemoveImage(ctx context.Context, image ImageInfo) error {
 		return fmt.Errorf("failed to remove image %s: %w", image.ImageName, err)
 	}
 	return nil
+}
+
+func (c *DockerEngine) ensureVolumesExist(ctx context.Context, names ...string) error {
+	volumes, err := c.ListVolumes(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list created volumes: %w", err)
+	}
+
+	existing := make([]string, 0, len(volumes))
+	for _, volume := range volumes {
+		existing = append(existing, volume.VolumeName)
+	}
+
+	for _, name := range names {
+		if slices.Contains(existing, name) {
+			continue
+		}
+		if err := c.CreateVolume(ctx, name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func projectNameFromContainerName(containerName string) *string {
+	if !strings.HasPrefix(containerName, "paulenv-") {
+		return nil
+	}
+	projectName := strings.TrimPrefix(containerName, "paulenv-")
+	if projectName == "" {
+		return nil
+	}
+	return &projectName
 }

@@ -256,36 +256,34 @@ jobs:
       - name: Verify project files
         shell: bash
         run: |
-          test -f "$PROJECTS_PATH"/test-minimal/compose.yaml || exit 1
-          test -f "$PROJECTS_PATH"/test-minimal/.env || exit 1
-          test -f "$PROJECTS_PATH"/test-node/compose.yaml || exit 1
-          test -f "$PROJECTS_PATH"/test-multi-lang/compose.yaml || exit 1
+          test -f "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
+          test -f "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
+          test -f "$PROJECTS_PATH"/test-node/build.conf || exit 1
+          test -f "$PROJECTS_PATH"/test-multi-lang/build.conf || exit 1
           echo "All project files created successfully"
 
-      - name: Verify .env content
+      - name: Verify build.conf content
         shell: bash
         run: |
-          grep "PROJECT_DIRNAME=" "$PROJECTS_PATH"/test-minimal/.env || exit 1
-          grep "PROJECT_PATH=" "$PROJECTS_PATH"/test-minimal/.env || exit 1
-          grep "HOST_UID=" "$PROJECTS_PATH"/test-minimal/.env || exit 1
-          grep "HOST_GID=" "$PROJECTS_PATH"/test-minimal/.env || exit 1
-          grep "USERNAME=" "$PROJECTS_PATH"/test-minimal/.env || exit 1
-          grep "USER_SHELL=" "$PROJECTS_PATH"/test-minimal/.env || exit 1
-          echo ".env file structure verified"
+          grep "^VERSION " "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
+          grep "^HOST_UID " "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
+          grep "^HOST_GID " "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
+          grep "^USERNAME " "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
+          grep "^USER_SHELL " "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
+          echo "build.conf structure verified"
 
-      - name: Verify compose.yaml structure
+      - name: Verify run.conf structure
         shell: bash
         run: |
-          grep "services:" "$PROJECTS_PATH"/test-minimal/compose.yaml || exit 1
-          grep "paulenv:" "$PROJECTS_PATH"/test-minimal/compose.yaml || exit 1
-          grep "build:" "$PROJECTS_PATH"/test-minimal/compose.yaml || exit 1
-          echo "compose.yaml structure verified"
+          grep "^VERSION " "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
+          grep "^PATH " "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
+          echo "run.conf structure verified"
 
-      - name: Verify ports in compose.yaml
+      - name: Verify ports in run.conf
         shell: bash
         run: |
-          grep "3000:3000" "$PROJECTS_PATH"/test-ports/compose.yaml || exit 1
-          grep "8080:8080" "$PROJECTS_PATH"/test-ports/compose.yaml || exit 1
+          grep "^PORT 3000:3000$" "$PROJECTS_PATH"/test-ports/run.conf || exit 1
+          grep "^PORT 8080:8080$" "$PROJECTS_PATH"/test-ports/run.conf || exit 1
           echo "Ports configuration verified"
 
       - name: Test remove command

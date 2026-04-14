@@ -1,0 +1,43 @@
+# Runtime config for your project
+# -------------------------------
+#
+# This file controls how the built image is run.
+# It does not affect the image hash and does not require a rebuild.
+#
+# Syntax:
+#   DIRECTIVE VALUE
+#
+# Blank lines and lines starting with "#" are ignored.
+# Directives may appear more than once when noted below.
+
+# Canonical project path on the host.
+# This directory is always mounted automatically inside the container.
+PATH {{.ProjectHostPath}}
+
+# Optional override for the initial working directory inside the container.
+# Defaults to the automatic project mount target.
+# WORKDIR /home/dev/projects/example
+
+# Optional extra bind mounts. Repeat as needed.
+# The value is forwarded directly to the container engine's --volume flag.
+{{- if .Volumes}}
+{{- range .Volumes}}
+VOLUME {{.}}
+{{- end}}
+{{- else}}
+# VOLUME ~/code/shared:/home/dev/shared
+{{- end}}
+
+# Optional published ports. Repeat as needed.
+# The value is forwarded directly to the container engine's --publish flag.
+{{- if .Ports}}
+{{- range .Ports}}
+PORT {{.}}
+{{- end}}
+{{- else}}
+# PORT 3000:3000
+{{- end}}
+
+# Internal file format version used by paul-envs for compatibility checks.
+# DO NOT EDIT
+VERSION {{.Version}}

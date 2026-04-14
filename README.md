@@ -11,8 +11,8 @@ itself can take place inside the container._
 
 ## What's this
 
-`paul-envs` is both a wrapper over a Compose-compatible container workflow
-(`docker compose` or `podman-compose`) and a configuration generator for it.
+`paul-envs` is both a wrapper over container-engine `build` / `run` workflows
+(`docker` or `podman`) and a configuration generator for them.
 
 Each of the created containers is similar in a way to [dev
 containers](https://containers.dev/) in that they are targeted for development
@@ -68,10 +68,12 @@ be updated by your project's scripts.
 `paul-envs` rely on full container isolation at the cost of less
 reproducibility, it also relies on a familiar Ubuntu LTS instead of `nix`.
 
-**vs. docker compose:**
-`paul-envs` wraps `docker compose` calls and add multi-project management and
-good defaults and setup for a CLI-based development environment.
-It can be seen as a "convenience layer" on top of `docker compose`.
+**vs. docker / podman directly:**
+`paul-envs` wraps `docker` / `podman` calls and adds multi-project management,
+project initialization, and good defaults for a CLI-based development
+environment.
+It can be seen as a "convenience layer" on top of direct container engine
+commands.
 
 **vs. nix-shell / direnv:**
 These manipulate your environment (PATH, env vars) but don't provide container
@@ -101,9 +103,9 @@ At first I was just relying on `systemd-nspawn`, as this is a tool that I knew.
 But by using it for this, I thought that having a base with an ephemeral
 "overlay" and a few mounted "volumes" from the host (for the source code, caches
 and some minimal controlled state such as shell history) was the most flexible
-solution for my setup, so I ended up with a more complex `Dockerfile`
-and `compose.yaml` file instead and I now rely on a software compatible to
-those.
+solution for my setup, so I ended up with a shared `Dockerfile` plus
+per-project configuration files and now rely directly on a compatible container
+engine.
 
 In the end I spent some efforts making sure those files are minimal, portable
 and optimized enough to efficienty be relied on for multi-projects setups, each
@@ -156,20 +158,20 @@ paul-envs create myapp ~/work/api \
 Without the corresponding flags, prompts will be proposed by `paul-envs` for
 important parameters (choosen shell, wanted pre-mounted volumes etc.).
 
-What this step does is just to create both a `yaml` and a `.env` file containing
-your container's configuration in your application data directory (advertised
-after the command succeeds). It doesn't build anything yet.
+What this step does is just to create both a `build.conf` and a `run.conf`
+file containing your container's configuration in your application data
+directory (advertised after the command succeeds). It doesn't build anything
+yet.
 
 ### 2. Build the container
 
-The previous file created both a "compose" and "env" file - basically
-configuration to define the container we want to build.
+The previous step created a `build.conf` file for build-time configuration and
+a `run.conf` file for run-time configuration.
 
-This step relies on a Compose-compatible frontend, which should be installed
-locally:
+This step relies directly on an installed container engine:
 
-- `docker compose` for Docker
-- `podman-compose` for Podman
+- `docker` for Docker
+- `podman` for Podman
 
 To build a container, just run the `paul-envs build <NAME>` command.
 For example, with a container named `myApp`, you would just do:
@@ -244,7 +246,7 @@ All its content will be copied as is unmodified, with two exceptions:
 
 2.  The git config file (generally `~/.gitconfig`) may also be updated after
     being copied in the container to set the name and e-mail information you
-    configured in your env file.
+    configured in your build config.
 
 Because those are the only exceptions, if you plan to overwrite one of those
 shell files, you will need to add the tool initialization commands in them
@@ -256,10 +258,10 @@ the dockerfile.
 
 The job of copying the dotfiles directory's content is taken by the
 `Dockerfile`. Meaning that you'll profit from this even if you're not relying on
-`docker compose` or `paul-envs`.
+`paul-envs`.
 
-If you don't go through `paul-envs`, you will have to set the `DOTFILES_DIR` env
-variable yourself so it points to the dotfiles directory you defined yourself.
+If you don't go through `paul-envs`, you will have to pass the `DOTFILES_DIR`
+build argument yourself so it points to the dotfiles directory you defined.
 When relying on `paul-envs`, a directory will be created for you.
 
 ## What gets preserved vs. ephemeral
@@ -279,7 +281,7 @@ will be removed when the container is exited).
 ## TODO:
 
 - help flag per commands
-- Ask which container engine to use if both podman-compose and docker are available
+- Ask which container engine to use if both podman and docker are available
 - Make `build` / `run` / `remove` / `clean` behavior adaptive if multiple container
   engine are installed: look at the one used at build time etc.
 - Add "init bash / zsh / fish" commands to simplify auto-completion setups

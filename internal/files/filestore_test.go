@@ -66,30 +66,44 @@ func TestFileStore_GetProjectDir(t *testing.T) {
 	}
 }
 
-func TestFileStore_GetProjectComposeFilePath(t *testing.T) {
+func TestFileStore_GetProjectInternalDir(t *testing.T) {
 	store := &FileStore{
 		baseDataDir:   "/test/base",
 		baseConfigDir: "/test/config",
 		projectsDir:   "/test/base/projects",
 	}
 
-	got := store.GetProjectComposeFilePath("myproject")
-	expected := "/test/base/projects/myproject/compose.yaml"
+	got := store.getProjectInternalDir("myproject")
+	expected := "/test/base/projects/myproject/.paul-env"
 	if got != expected {
-		t.Errorf("GetProjectComposeFilePath() = %v, want %v", got, expected)
+		t.Errorf("getProjectInternalDir() = %v, want %v", got, expected)
 	}
 }
 
-func TestFileStore_GetProjectEnvFilePath(t *testing.T) {
+func TestFileStore_GetProjectBuildConfigPath(t *testing.T) {
 	store := &FileStore{
 		baseDataDir:   "/test/base",
 		baseConfigDir: "/test/config",
 		projectsDir:   "/test/base/projects",
 	}
 
-	got := store.GetProjectEnvFilePath("myproject")
-	expected := "/test/base/projects/myproject/.env"
+	got := store.GetProjectBuildConfigPath("myproject")
+	expected := "/test/base/projects/myproject/build.conf"
 	if got != expected {
-		t.Errorf("GetProjectEnvFilePath() = %v, want %v", got, expected)
+		t.Errorf("GetProjectBuildConfigPath() = %v, want %v", got, expected)
+	}
+}
+
+func TestFileStore_GetProjectRuntimeConfigPath(t *testing.T) {
+	store := &FileStore{
+		baseDataDir:   "/test/base",
+		baseConfigDir: "/test/config",
+		projectsDir:   "/test/base/projects",
+	}
+
+	got := store.GetProjectRuntimeConfigPath("myproject")
+	expected := "/test/base/projects/myproject/run.conf"
+	if got != expected {
+		t.Errorf("GetProjectRuntimeConfigPath() = %v, want %v", got, expected)
 	}
 }

@@ -64,8 +64,8 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 func printProjectInfo(projectEntry files.ProjectEntry, imageInfo *engine.ImageInfo, console *console.Console) bool {
 	console.Info("%s", projectEntry.ProjectName)
 	console.WriteLn("  Mounted project   : %s", projectEntry.ProjectPath)
-	console.WriteLn("  .env file         : %s", projectEntry.EnvFilePath)
-	console.WriteLn("  compose.yaml file : %s", projectEntry.ComposeFilePath)
+	console.WriteLn("  build.conf file   : %s", projectEntry.BuildConfigPath)
+	console.WriteLn("  run.conf file     : %s", projectEntry.RuntimeConfigPath)
 	if imageInfo != nil {
 		console.WriteLn("  Container image   : %s", imageInfo.ImageName)
 		if imageInfo.BuiltAt == nil {

@@ -1,7 +1,7 @@
 // # project_assets.go
 // This file creates all files associated to a given project:
-// -  Its `compose.yaml` file
-// -  Its `.env` file
+// -  Its `build.conf` file
+// -  Its `run.conf` file
 // -  Its `project.lock` lockfile
 // -  Its `project.buildinfo` build state
 
@@ -20,18 +20,16 @@ import (
 	"time"
 
 	versions "github.com/peaberberian/paul-envs/internal"
+	"github.com/peaberberian/paul-envs/internal/config"
 	"github.com/peaberberian/paul-envs/internal/utils"
 )
 
 //go:embed embeds/*
 var assets embed.FS
 
-// Data needed to construct a project's `.env` file, which will list environment
-// variables
-type EnvTemplateData struct {
-	ProjectID         string
-	ProjectDestPath   string
-	ProjectHostPath   string
+// Data needed to construct a project's `build.conf` file.
+type BuildTemplateData struct {
+	Version           string
 	HostUID           string
 	HostGID           string
 	Username          string
@@ -60,14 +58,12 @@ type EnvTemplateData struct {
 	GitEmail          string
 }
 
-// Data needed to construct a project's `compose.yaml` file, listing mounted
-// ports, volumes...
-type ComposeTemplateData struct {
-	ProjectName string
-	Ports       []uint16
-	EnableSSH   bool
-	SSHKeyPath  string
-	Volumes     []string
+// Data needed to construct a project's `run.conf` file.
+type RuntimeTemplateData struct {
+	Version         string
+	ProjectHostPath string
+	Volumes         []string
+	Ports           []string
 }
 
 // Holds the parsed values from the `project.lock` file associated to each project
@@ -84,10 +80,12 @@ type buildState struct {
 	version utils.Version
 	// A unique identifier for the machine that perform the build
 	builtBy string
-	// The hash of the `.env` file the last time the project has been built
-	buildEnvHash string
-	// The hash of the `compose.yaml` file the last time the project has been built
-	buildComposeHash string
+	// The hash of the `build.conf` file the last time the project has been built
+	buildConfigHash string
+	// The version of the build.conf file used for the last build
+	buildConfigVersion string
+	// The version of the run.conf file used for the last build
+	runtimeConfigVersion string
 	// The last time it was built according to this tool
 	builtAt time.Time
 	// The name of the container engine which produced the last build (e.g. "docker")
@@ -102,8 +100,7 @@ type RebuildReason int
 const (
 	RebuildNotNeeded RebuildReason = iota
 	RebuildDifferentMachine
-	RebuildComposeChanged
-	RebuildEnvChanged
+	RebuildBuildConfigChanged
 	RebuildDifferentEngine
 )
 
@@ -113,10 +110,8 @@ func (r RebuildReason) String() string {
 		return "no rebuild needed"
 	case RebuildDifferentMachine:
 		return "last built on a different machine"
-	case RebuildComposeChanged:
-		return "compose.yaml file has changed since last build"
-	case RebuildEnvChanged:
-		return ".env file has changed since last build"
+	case RebuildBuildConfigChanged:
+		return "build.conf file has changed since last build"
 	case RebuildDifferentEngine:
 		return "built on a different container engine"
 	default:
@@ -160,59 +155,62 @@ func (s ProjectLockStatus) IsValid() bool {
 // the configuration given.
 func (f *FileStore) CreateProjectFiles(
 	projectName string,
-	envTplData EnvTemplateData,
-	composeTplData ComposeTemplateData,
+	buildTplData BuildTemplateData,
+	runtimeTplData RuntimeTemplateData,
 ) error {
 	if err := f.RefreshBaseFiles(); err != nil {
 		return fmt.Errorf("create base files: %w", err)
 	}
 
-	// For env
+	// For build.conf
 
-	envTplCtnt, err := assets.ReadFile("embeds/env.tmpl")
+	buildTplCtnt, err := assets.ReadFile("embeds/build.conf.tmpl")
 	if err != nil {
-		return fmt.Errorf("read env template: %w", err)
+		return fmt.Errorf("read build config template: %w", err)
 	}
 
-	envTpl, err := template.New("env").Parse(string(envTplCtnt))
+	buildTpl, err := template.New("build").Parse(string(buildTplCtnt))
 	if err != nil {
-		return fmt.Errorf("parse env template: %w", err)
+		return fmt.Errorf("parse build config template: %w", err)
 	}
 
 	var buf bytes.Buffer
-	if err := envTpl.Execute(&buf, envTplData); err != nil {
-		return fmt.Errorf("execute env template: %w", err)
+	if err := buildTpl.Execute(&buf, buildTplData); err != nil {
+		return fmt.Errorf("execute build config template: %w", err)
 	}
 
 	if err := f.userFS.MkdirAsUser(f.getProjectDir(projectName), 0755); err != nil {
 		return fmt.Errorf("create project directory: %w", err)
 	}
-
-	envBytes := buf.Bytes()
-	if err := f.userFS.WriteFileAsUser(f.GetProjectEnvFilePath(projectName), envBytes, 0644); err != nil {
-		return fmt.Errorf("write env file: %w", err)
+	if err := f.userFS.MkdirAsUser(f.getProjectInternalDir(projectName), 0755); err != nil {
+		return fmt.Errorf("create project internal directory: %w", err)
 	}
 
-	// Now for compose
-
-	composeTplCtnt, err := assets.ReadFile("embeds/compose.tmpl")
-	if err != nil {
-		return fmt.Errorf("read compose template: %w", err)
+	buildBytes := buf.Bytes()
+	if err := f.userFS.WriteFileAsUser(f.GetProjectBuildConfigPath(projectName), buildBytes, 0644); err != nil {
+		return fmt.Errorf("write build config file: %w", err)
 	}
 
-	composeTpl, err := template.New("compose").Parse(string(composeTplCtnt))
+	// Now for run.conf
+
+	runtimeTplCtnt, err := assets.ReadFile("embeds/run.conf.tmpl")
 	if err != nil {
-		return fmt.Errorf("parse compose template: %w", err)
+		return fmt.Errorf("read runtime config template: %w", err)
+	}
+
+	runtimeTpl, err := template.New("runtime").Parse(string(runtimeTplCtnt))
+	if err != nil {
+		return fmt.Errorf("parse runtime config template: %w", err)
 	}
 
 	buf.Reset()
-	if err := composeTpl.Execute(&buf, composeTplData); err != nil {
-		return fmt.Errorf("execute compose template: %w", err)
+	if err := runtimeTpl.Execute(&buf, runtimeTplData); err != nil {
+		return fmt.Errorf("execute runtime config template: %w", err)
 	}
 
-	composeBytes := buf.Bytes()
-	if err := f.userFS.WriteFileAsUser(f.GetProjectComposeFilePath(projectName), composeBytes, 0644); err != nil {
-		return fmt.Errorf("write compose file: %w", err)
+	runtimeBytes := buf.Bytes()
+	if err := f.userFS.WriteFileAsUser(f.GetProjectRuntimeConfigPath(projectName), runtimeBytes, 0644); err != nil {
+		return fmt.Errorf("write runtime config file: %w", err)
 	}
 
 	if err := f.writeProjectInfo(projectName); err != nil {
@@ -335,24 +333,27 @@ func (f *FileStore) RefreshBuildInfoFile(projectName string, engineName string, 
 	if err != nil {
 		return fmt.Errorf("failed to create 'project.buildinfo' file: %w", err)
 	}
-	envFilePath := f.GetProjectEnvFilePath(projectName)
-	envBytes, err := os.ReadFile(envFilePath)
+	buildCfg, err := config.LoadBuildConfig(f.GetProjectBuildConfigPath(projectName))
 	if err != nil {
-		return fmt.Errorf("failed to create 'project.buildinfo' file due to impossibility to read file '%s': %w", envFilePath, err)
+		return fmt.Errorf("failed to create 'project.buildinfo' file due to invalid build.conf: %w", err)
 	}
-	envHash := utils.BufferHash(envBytes)
-	composeFilePath := f.GetProjectComposeFilePath(projectName)
-	composeBytes, err := os.ReadFile(composeFilePath)
+	runtimeCfg, err := config.LoadRuntimeConfig(f.GetProjectRuntimeConfigPath(projectName))
 	if err != nil {
-		return fmt.Errorf("failed to create 'project.buildinfo' file due to impossibility to read file '%s': %w", composeFilePath, err)
+		return fmt.Errorf("failed to create 'project.buildinfo' file due to invalid run.conf: %w", err)
 	}
-	composeHash := utils.BufferHash(composeBytes)
+	buildConfigPath := f.GetProjectBuildConfigPath(projectName)
+	buildConfigBytes, err := os.ReadFile(buildConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to create 'project.buildinfo' file due to impossibility to read file '%s': %w", buildConfigPath, err)
+	}
+	buildConfigHash := utils.BufferHash(buildConfigBytes)
 	now := time.Now()
 	buildInfoBytes, err := formatBuildInfo(buildState{
 		version:                versions.BuildInfoVersion,
 		builtBy:                machineId,
-		buildEnvHash:           envHash,
-		buildComposeHash:       composeHash,
+		buildConfigHash:        buildConfigHash,
+		buildConfigVersion:     buildCfg.Version.ToString(),
+		runtimeConfigVersion:   runtimeCfg.Version.ToString(),
 		builtAt:                now,
 		containerEngine:        engineName,
 		containerEngineVersion: engineVersion,
@@ -360,7 +361,7 @@ func (f *FileStore) RefreshBuildInfoFile(projectName string, engineName string, 
 	if err != nil {
 		return fmt.Errorf("failed to create 'project.buildinfo' due to impossibility to format it: %w", err)
 	}
-	buildInfoPath := filepath.Join(f.getProjectDir(projectName), "project.buildinfo")
+	buildInfoPath := f.getBuildInfoFilePathFor(projectName)
 	err = f.userFS.WriteFileAsUser(buildInfoPath, buildInfoBytes, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create 'project.buildinfo' due to impossibility to write '%s': %w", buildInfoPath, err)
@@ -399,12 +400,16 @@ func (filestore *FileStore) ReadBuildInfo(projectName string) (*buildState, erro
 			bState.builtBy = v
 			continue
 		}
-		if v, ok := strings.CutPrefix(line, "BUILD_ENV="); ok {
-			bState.buildEnvHash = v
+		if v, ok := strings.CutPrefix(line, "BUILD_CONFIG="); ok {
+			bState.buildConfigHash = v
 			continue
 		}
-		if v, ok := strings.CutPrefix(line, "BUILD_COMPOSE="); ok {
-			bState.buildComposeHash = v
+		if v, ok := strings.CutPrefix(line, "BUILD_CONFIG_VERSION="); ok {
+			bState.buildConfigVersion = v
+			continue
+		}
+		if v, ok := strings.CutPrefix(line, "RUNTIME_CONFIG_VERSION="); ok {
+			bState.runtimeConfigVersion = v
 			continue
 		}
 		if v, ok := strings.CutPrefix(line, "CONTAINER_ENGINE="); ok {
@@ -448,11 +453,14 @@ func (filestore *FileStore) ReadBuildInfo(projectName string) (*buildState, erro
 	if bState.builtBy == "" {
 		return nil, errors.New("invalid 'project.buildinfo': no BUILT_BY")
 	}
-	if bState.buildEnvHash == "" {
-		return nil, errors.New("invalid 'project.buildinfo': no BUILD_ENV")
+	if bState.buildConfigHash == "" {
+		return nil, errors.New("invalid 'project.buildinfo': no BUILD_CONFIG")
 	}
-	if bState.buildComposeHash == "" {
-		return nil, errors.New("invalid 'project.buildinfo': no BUILD_COMPOSE")
+	if bState.buildConfigVersion == "" {
+		return nil, errors.New("invalid 'project.buildinfo': no BUILD_CONFIG_VERSION")
+	}
+	if bState.runtimeConfigVersion == "" {
+		return nil, errors.New("invalid 'project.buildinfo': no RUNTIME_CONFIG_VERSION")
 	}
 	return &bState, nil
 }
@@ -469,20 +477,12 @@ func (filestore *FileStore) NeedsRebuild(projectName string, currentEngineName s
 		return true, RebuildDifferentMachine, nil
 	}
 
-	composeHash, err := utils.FileHash(filestore.GetProjectComposeFilePath(projectName))
+	buildConfigHash, err := utils.FileHash(filestore.GetProjectBuildConfigPath(projectName))
 	if err != nil {
-		return false, RebuildNotNeeded, fmt.Errorf("cannot hash current compose file: %w", err)
+		return false, RebuildNotNeeded, fmt.Errorf("cannot hash current build config file: %w", err)
 	}
-	if bState.buildComposeHash != composeHash {
-		return true, RebuildComposeChanged, nil
-	}
-
-	envHash, err := utils.FileHash(filestore.GetProjectEnvFilePath(projectName))
-	if err != nil {
-		return false, RebuildNotNeeded, fmt.Errorf("cannot hash current env file: %w", err)
-	}
-	if bState.buildEnvHash != envHash {
-		return true, RebuildEnvChanged, nil
+	if bState.buildConfigHash != buildConfigHash {
+		return true, RebuildBuildConfigChanged, nil
 	}
 
 	if currentEngineName != "" && bState.containerEngine != currentEngineName {
@@ -533,15 +533,17 @@ func formatBuildInfo(bInfo buildState) ([]byte, error) {
 	_, err := fmt.Fprintf(&buf,
 		"VERSION=%s\n"+
 			"BUILT_BY=%s\n"+
-			"BUILD_ENV=%s\n"+
-			"BUILD_COMPOSE=%s\n"+
+			"BUILD_CONFIG=%s\n"+
+			"BUILD_CONFIG_VERSION=%s\n"+
+			"RUNTIME_CONFIG_VERSION=%s\n"+
 			"LAST_BUILT_AT=%s\n"+
 			"CONTAINER_ENGINE=%s\n"+
 			"CONTAINER_ENGINE_VERSION=%s\n",
 		bInfo.version.ToString(),
 		bInfo.builtBy,
-		bInfo.buildEnvHash,
-		bInfo.buildComposeHash,
+		bInfo.buildConfigHash,
+		bInfo.buildConfigVersion,
+		bInfo.runtimeConfigVersion,
 		bInfo.builtAt.Format(time.RFC3339),
 		bInfo.containerEngine,
 		bInfo.containerEngineVersion,
