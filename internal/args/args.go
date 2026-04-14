@@ -280,19 +280,6 @@ func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {
 	// TODO: sanitization?
 	cfg.Volumes = p.volumes
 
-	if cfg.InstallNode == "" {
-		cfg.InstallNode = config.VersionNone
-	}
-	if cfg.InstallRust == "" {
-		cfg.InstallRust = config.VersionNone
-	}
-	if cfg.InstallPython == "" {
-		cfg.InstallPython = config.VersionNone
-	}
-	if cfg.InstallGo == "" {
-		cfg.InstallGo = config.VersionNone
-	}
-
 	return cfg, nil
 }
 
@@ -498,6 +485,18 @@ func needsExactVersion(version string) bool {
 }
 
 func validateNoPromptConfig(cfg *config.Config) error {
+	if cfg.InstallNode == "" {
+		cfg.InstallNode = config.VersionNone
+	}
+	if cfg.InstallRust == "" {
+		cfg.InstallRust = config.VersionNone
+	}
+	if cfg.InstallPython == "" {
+		cfg.InstallPython = config.VersionNone
+	}
+	if cfg.InstallGo == "" {
+		cfg.InstallGo = config.VersionNone
+	}
 	if cfg.InstallMise {
 		return nil
 	}

@@ -6,9 +6,36 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/peaberberian/paul-envs/internal/config"
 	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/files"
 )
+
+func TestBuildConfig_LeavesLanguagesUnsetForInteractivePrompting(t *testing.T) {
+	cfg, err := buildConfig(t.TempDir(), &parsedFlags{})
+	if err != nil {
+		t.Fatalf("buildConfig() error = %v", err)
+	}
+	if cfg.InstallNode != "" || cfg.InstallRust != "" || cfg.InstallPython != "" || cfg.InstallGo != "" {
+		t.Fatalf("expected unset language versions before prompting, got node=%q rust=%q python=%q go=%q",
+			cfg.InstallNode, cfg.InstallRust, cfg.InstallPython, cfg.InstallGo)
+	}
+}
+
+func TestValidateNoPromptConfig_DefaultsUnsetLanguagesToNone(t *testing.T) {
+	cfg := config.New("dev", config.ShellBash)
+
+	if err := validateNoPromptConfig(&cfg); err != nil {
+		t.Fatalf("validateNoPromptConfig() error = %v", err)
+	}
+	if cfg.InstallNode != config.VersionNone ||
+		cfg.InstallRust != config.VersionNone ||
+		cfg.InstallPython != config.VersionNone ||
+		cfg.InstallGo != config.VersionNone {
+		t.Fatalf("expected no-prompt defaults to be %q, got node=%q rust=%q python=%q go=%q",
+			config.VersionNone, cfg.InstallNode, cfg.InstallRust, cfg.InstallPython, cfg.InstallGo)
+	}
+}
 
 func TestParseAndPrompt_NoPromptRejectsExactVersionWithoutMise(t *testing.T) {
 	projectPath := t.TempDir()
