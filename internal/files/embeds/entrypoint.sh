@@ -50,11 +50,14 @@ if [[ $# -eq 0 ]]; then
     exec su ${CONTAINER_USERNAME} -s ${USER_SHELL}
 else
     case "$USER_SHELL" in
-        */fish)
+        *fish)
             exec su ${CONTAINER_USERNAME} -s ${USER_SHELL} -c 'exec $argv[1] $argv[2..]' -- "$@"
             ;;
+        *zsh)
+            exec su ${CONTAINER_USERNAME} -s ${USER_SHELL} -c 'source $HOME/.container-overrides.zsh; exec "$0" "$@"' -- "$@"
+            ;;
         *)
-            exec su ${CONTAINER_USERNAME} -s ${USER_SHELL} -c '$0 "$@"' "$@"
+            exec su ${CONTAINER_USERNAME} -s ${USER_SHELL} -c 'source $HOME/.container-overrides.bash; exec "$0" "$@"' -- "$@"
             ;;
     esac
 fi

@@ -6,7 +6,11 @@
 
 - make `mise` opt-out, not opt-in, as it is basically needed for fine-grained versions for language tooling
 - tui: separate agent step from tools step to be more readable
-- `paul-env run <name> <command>` now always runs `command` in the (default) shell
+
+### Bug fixes
+
+- `run` commands (e.g. `paul-envs run my-project <COMMANDS>`) now can be anything availabe when running the shell, including mise-installed tools
+- Ensure `mise` make language available when they are configured to be `latest`
 - Still set base directory envs (e.g. `XDG_*`) for login shells
 
 ## v0.6.0 (2026-04-12)

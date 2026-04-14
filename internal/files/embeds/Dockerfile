@@ -108,6 +108,10 @@ RUN printf "export XDG_CACHE_HOME=%s\nexport XDG_STATE_HOME=%s\nexport XDG_DATA_
           /home/${USERNAME}/.container-overrides.zsh > /dev/null && \
     echo "export HISTFILE=/home/${USERNAME}/.container-local/.bash_history" >> /home/${USERNAME}/.container-overrides.bash && \
     echo "export HISTFILE=/home/${USERNAME}/.container-local/.zsh_history" >> /home/${USERNAME}/.container-overrides.zsh && \
+    if [ "$INSTALL_MISE" = "true" ]; then \
+      printf "export PATH=\"/home/${USERNAME}/.container-local/data/mise/shims:\$PATH\"\n" >> /home/${USERNAME}/.container-overrides.bash && \
+      printf "export PATH=\"/home/${USERNAME}/.container-local/data/mise/shims:\$PATH\"\n" >> /home/${USERNAME}/.container-overrides.zsh; \
+    fi && \
     printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" >> /home/${USERNAME}/.bashrc && \
     if [ "$USER_SHELL" = "zsh" ]; then \
       printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" >> /home/${USERNAME}/.zshrc; \
@@ -116,6 +120,9 @@ RUN printf "export XDG_CACHE_HOME=%s\nexport XDG_STATE_HOME=%s\nexport XDG_DATA_
 RUN printf "set -gx XDG_CACHE_HOME %s\nset -gx XDG_STATE_HOME %s\nset -gx XDG_DATA_HOME %s\nset -gx _ZO_DATA_DIR %s\nset -gx STARSHIP_CACHE %s\nset -gx ATUIN_DB_PATH %s\n" \
     "${XDG_CACHE_HOME}" "${XDG_STATE_HOME}" "${XDG_DATA_HOME}" "${_ZO_DATA_DIR}" "${STARSHIP_CACHE}" "${ATUIN_DB_PATH}" \
     > /home/${USERNAME}/.container-overrides.fish && \
+    if [ "$INSTALL_MISE" = "true" ]; then \
+      printf "set -gx PATH /home/${USERNAME}/.container-local/data/mise/shims \$PATH\n" >> /home/${USERNAME}/.container-overrides.fish; \
+    fi && \
     if [ "$USER_SHELL" = "fish" ]; then \
       mkdir -p /home/${USERNAME}/.config/fish && \
       printf "\n# Container overrides\nif test -f ~/.container-overrides.fish\n    source ~/.container-overrides.fish\nend\n" \
@@ -338,17 +345,18 @@ RUN if [ "$INSTALL_MISE" = "true" ]; then \
       printf "\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n" >> /home/${USERNAME}/.zshrc; \
       printf "\n# Initialize mise\neval \"\$(mise activate zsh)\"\n" >> /home/${USERNAME}/.zshrc; \
     fi; \
+    export PATH="/home/${USERNAME}/.local/bin:$PATH"; \
     if [ -n "$INSTALL_NODE" ] && [ "$INSTALL_NODE" != "none" ]; then \
-      export PATH="/home/${USERNAME}/.local/bin:$PATH" && mise use -g node@${INSTALL_NODE}; \
+      mise install node@${INSTALL_NODE} && mise use -g node@${INSTALL_NODE}; \
     fi; \
     if [ -n "$INSTALL_RUST" ] && [ "$INSTALL_RUST" != "none" ]; then \
-      export PATH="/home/${USERNAME}/.local/bin:$PATH" && mise use -g rust@${INSTALL_RUST}; \
+      mise install rust@${INSTALL_RUST} && mise use -g rust@${INSTALL_RUST}; \
     fi; \
     if [ -n "$INSTALL_PYTHON" ] && [ "$INSTALL_PYTHON" != "none" ]; then \
-      export PATH="/home/${USERNAME}/.local/bin:$PATH" && mise use -g python@${INSTALL_PYTHON}; \
+      mise install python@${INSTALL_PYTHON} && mise use -g python@${INSTALL_PYTHON}; \
     fi; \
     if [ -n "$INSTALL_GO" ] && [ "$INSTALL_GO" != "none" ]; then \
-      export PATH="/home/${USERNAME}/.local/bin:$PATH" && mise use -g go@${INSTALL_GO}; \
+      mise install go@${INSTALL_GO} && mise use -g go@${INSTALL_GO}; \
     fi; \
   fi
 
