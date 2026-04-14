@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
+	"strings"
 )
 
 const (
-	projectComposeFilename = "compose.yaml"
-	projectEnvFilename     = ".env"
-	projectInfoFilename    = "project.lock"
-	buildInfoFilename      = "project.buildinfo"
+	projectBuildConfigFilename   = "build.conf"
+	projectRuntimeConfigFilename = "run.conf"
+	projectInfoFilename          = "project.lock"
+	buildInfoFilename            = "project.buildinfo"
 )
 
 // Struct allowing to create, read and obtain the path of all files created by
@@ -33,13 +33,13 @@ type ProjectEntry struct {
 	// The "name" by which it is refered to in `paul-envs`
 	ProjectName string
 	// The path on the host to the mounted directory which corresponds to the
-	// "project" of that container (as indicated in the `.env` file).
+	// "project" of that container (as indicated in the runtime config).
 	// TODO: should this one be behind a method?
 	ProjectPath string
-	// `compose.yaml` file associated to this project.
-	ComposeFilePath string
-	// `.env` file associated to this project.
-	EnvFilePath string
+	// `build.conf` file associated to this project.
+	BuildConfigPath string
+	// `run.conf` file associated to this project.
+	RuntimeConfigPath string
 	// TODO: Last built / last run?
 }
 
@@ -101,10 +101,10 @@ func (f *FileStore) GetProject(name string) (ProjectEntry, error) {
 		return ProjectEntry{}, err
 	}
 	return ProjectEntry{
-		ProjectName:     name,
-		ProjectPath:     projectPath,
-		ComposeFilePath: f.GetProjectComposeFilePath(name),
-		EnvFilePath:     f.GetProjectEnvFilePath(name),
+		ProjectName:       name,
+		ProjectPath:       projectPath,
+		BuildConfigPath:   f.GetProjectBuildConfigPath(name),
+		RuntimeConfigPath: f.GetProjectRuntimeConfigPath(name),
 	}, nil
 }
 
@@ -178,16 +178,16 @@ func (f *FileStore) RemoveProjectDotfilesDir(projectName string) error {
 	return os.RemoveAll(expectedDir)
 }
 
-// Get path to the given project's compose file.
+// Get path to the given project's build config file.
 // TODO: make private
-func (f *FileStore) GetProjectComposeFilePath(name string) string {
-	return filepath.Join(f.projectsDir, name, projectComposeFilename)
+func (f *FileStore) GetProjectBuildConfigPath(name string) string {
+	return filepath.Join(f.projectsDir, name, projectBuildConfigFilename)
 }
 
-// Get path to the given project's .env file.
+// Get path to the given project's runtime config file.
 // TODO: make private
-func (f *FileStore) GetProjectEnvFilePath(name string) string {
-	return filepath.Join(f.projectsDir, name, projectEnvFilename)
+func (f *FileStore) GetProjectRuntimeConfigPath(name string) string {
+	return filepath.Join(f.projectsDir, name, projectRuntimeConfigFilename)
 }
 
 // Get the path to where all projects config will be put.
@@ -216,19 +216,25 @@ func (f *FileStore) getProjectDir(name string) string {
 // Returns the mounted host directory associated with the project name given.
 // Returns an `error` if that data could not have been obtained.
 func (f *FileStore) parseProjectPath(name string) (string, error) {
-	envFile := f.GetProjectEnvFilePath(name)
-	file, err := os.Open(envFile)
+	runConf := f.GetProjectRuntimeConfigPath(name)
+	file, err := os.Open(runConf)
 	if err != nil {
-		return "", fmt.Errorf("could not open .env file associated to project '%s': %w", name, err)
+		return "", fmt.Errorf("could not open run.conf associated to project '%s': %w", name, err)
 	}
 	defer file.Close()
 
-	re := regexp.MustCompile(`PROJECT_PATH="([^"]*)"`)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if matches := re.FindStringSubmatch(scanner.Text()); len(matches) == 2 {
-			return matches[1], nil
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if v, ok := strings.CutPrefix(line, "PATH "); ok {
+			return v, nil
 		}
 	}
-	return "", fmt.Errorf("did not found the project path associated to project '%s'", name)
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("could not read run.conf associated to project '%s': %w", name, err)
+	}
+	return "", fmt.Errorf("did not find the project path associated to project '%s'", name)
 }

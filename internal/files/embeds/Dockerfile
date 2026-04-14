@@ -12,8 +12,8 @@
 # `$HOME/.container-cache` directory and tools' user data (e.g. shell history
 # neovim plugins, tools database etc.) to a `$HOME/.container-local` directory.
 # It does both to simplify the possibility of persisting those two, but it
-# doesn't persist them by itself (this is performed by the `compose.yaml` file
-# associated to each project).
+# doesn't persist them by itself (this is configured in each project's
+# runtime configuration).
 
 FROM ubuntu:24.04 AS ubuntu-base
 

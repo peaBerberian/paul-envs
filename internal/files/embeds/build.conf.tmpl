@@ -1,0 +1,73 @@
+# Build config for your project
+# -----------------------------
+#
+# This file contains the configuration used when building a project.
+#
+# Syntax:
+#   DIRECTIVE VALUE
+#
+# Blank lines and lines starting with "#" are ignored.
+# Unknown directives are ignored with a warning for forward compatibility.
+#
+# Any change to this file invalidates the previously built image and will cause
+# paul-envs to propose a rebuild on the next run.
+#
+# Settings only needed at run-time such as bind mounts, published ports and
+# working directory belong in the sibling "run.conf" file.
+
+# Username created in the container.
+USERNAME {{.Username}}
+
+# Default shell for the container user.
+# Supported values: bash, zsh, fish
+USER_SHELL {{.Shell}}
+
+# Language/toolchain versions.
+# Values can be:
+# - if 'none': don't install it
+# - if 'latest': Install the last stable version
+# - If anything else: The exact version to install (e.g. "1.21.5").
+#   That last type of value will only work if INSTALL_MISE is 'true'.
+INSTALL_NODE {{.InstallNode}}
+INSTALL_RUST {{.InstallRust}}
+INSTALL_PYTHON {{.InstallPython}}
+INSTALL_GO {{.InstallGo}}
+
+# If 'true', add WebAssembly-specialized tools such as binaryen and a
+# WebAssembly target for Rust if it is installed.
+ENABLE_WASM {{.EnableWasm}}
+
+# If 'true', openssh will be installed, and the container will listen for ssh
+# connections at port 22.
+ENABLE_SSH {{.EnableSSH}}
+
+# If 'true', sudo will be installed, with a password set to "dev".
+ENABLE_SUDO {{.EnableSudo}}
+
+# Optional tools.
+# "true" means that it will be installed
+# "false" means that it won't.
+INSTALL_NEOVIM {{.InstallNeovim}}
+INSTALL_STARSHIP {{.InstallStarship}}
+INSTALL_OH_MY_POSH {{.InstallOhMyPosh}}
+INSTALL_ATUIN {{.InstallAtuin}}
+INSTALL_MISE {{.InstallMise}}
+INSTALL_ZELLIJ {{.InstallZellij}}
+INSTALL_JUJUTSU {{.InstallJujutsu}}
+INSTALL_DELTA {{.InstallDelta}}
+INSTALL_OPEN_CODE {{.InstallOpenCode}}
+INSTALL_CLAUDE_CODE {{.InstallClaudeCode}}
+INSTALL_CODEX {{.InstallCodex}}
+INSTALL_FIREFOX {{.InstallFirefox}}
+
+# Extra Ubuntu packages, space-separated. Leave empty for none.
+SUPPLEMENTARY_PACKAGES {{.Packages}}
+
+# Git author identity configured inside the container. May be left empty.
+GIT_AUTHOR_NAME {{.GitName}}
+GIT_AUTHOR_EMAIL {{.GitEmail}}
+
+# Container user/group IDs. Keep these aligned with the host to avoid
+# permission mismatches on mounted paths.
+HOST_UID {{.HostUID}}
+HOST_GID {{.HostGID}}

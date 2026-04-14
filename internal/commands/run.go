@@ -60,12 +60,15 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 	if err := utils.ValidateProjectName(name); err != nil {
 		return err
 	}
+	if !filestore.DoesProjectExist(name) {
+		return fmt.Errorf("project '%s' not found\nHint: Use 'paul-envs list' to see available projects", name)
+	}
+	if err := ensureProjectCompatible(name, filestore, console); err != nil {
+		return fmt.Errorf("cannot run project '%s': %w", name, err)
+	}
 
 	project, err := filestore.GetProject(name)
 	if err != nil {
-		if !filestore.DoesProjectExist(name) {
-			return fmt.Errorf("project '%s' not found\nHint: Use 'paul-envs list' to see available projects", name)
-		}
 		return fmt.Errorf("failed to obtain information on project '%s': %w", name, err)
 	}
 
@@ -82,14 +85,6 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 		if err = Build(ctx, []string{project.ProjectName}, filestore, console); err != nil {
 			return fmt.Errorf("did not succeed to build project: %w", err)
 		}
-	}
-
-	status, err := filestore.ValidateProjectLock(project.ProjectName)
-	if !status.IsValid() {
-		console.Warn("This project has an invalid lockfile: %s\n", status)
-		console.Warn("The running container may not match your current configuration.\n")
-		console.Warn("Consider running 'build' first.\n\n")
-		// Continue anyway if image exists
 	}
 
 	buildInfo, err := filestore.ReadBuildInfo(project.ProjectName)

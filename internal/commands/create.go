@@ -38,10 +38,7 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 
 	// TODO: Should those template definitions be moved to the `FileStore` code?
 	// It could only take the Config as argument
-	envData := files.EnvTemplateData{
-		ProjectID:         utils.EscapeEnvValue(cfg.ProjectName),
-		ProjectDestPath:   utils.EscapeEnvValue(cfg.ProjectDestPath),
-		ProjectHostPath:   utils.EscapeEnvValue(cfg.ProjectHostPath),
+	buildData := files.BuildTemplateData{
 		HostUID:           utils.EscapeEnvValue(cfg.UID),
 		HostGID:           utils.EscapeEnvValue(cfg.GID),
 		Username:          utils.EscapeEnvValue(cfg.Username),
@@ -70,15 +67,11 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 		GitEmail:          utils.EscapeEnvValue(cfg.GitEmail),
 	}
 
-	composeData := files.ComposeTemplateData{
-		ProjectName: cfg.ProjectName,
-		Ports:       cfg.Ports,
-		EnableSSH:   cfg.EnableSsh,
-		SSHKeyPath:  cfg.SshKeyPath,
-		Volumes:     cfg.Volumes,
+	runtimeData := files.RuntimeTemplateData{
+		ProjectHostPath: utils.EscapeEnvValue(cfg.ProjectHostPath),
 	}
 
-	err := filestore.CreateProjectFiles(cfg.ProjectName, envData, composeData)
+	err := filestore.CreateProjectFiles(cfg.ProjectName, buildData, runtimeData)
 	if err != nil {
 		return fmt.Errorf("failed to create project files: %w", err)
 	}
@@ -91,8 +84,8 @@ func printNextSteps(cfg *config.Config, dotfilesDir string, filestore *files.Fil
 	console.WriteLn("Next steps:")
 	console.WriteLn("  1. Review/edit configuration:")
 	// TODO: rely on just `GetProject` instead
-	console.WriteLn("     - %s", filestore.GetProjectEnvFilePath(cfg.ProjectName))
-	console.WriteLn("     - %s", filestore.GetProjectComposeFilePath(cfg.ProjectName))
+	console.WriteLn("     - %s", filestore.GetProjectBuildConfigPath(cfg.ProjectName))
+	console.WriteLn("     - %s", filestore.GetProjectRuntimeConfigPath(cfg.ProjectName))
 	console.WriteLn("  2. Put the $HOME dotfiles you want to port in:")
 	console.WriteLn("     - %s", dotfilesDir)
 	console.WriteLn("  3. Build the environment:")
