@@ -49,6 +49,8 @@ func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntr
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
+		// Safe without extra escaping: exec.Command passes this as a single argv
+		// element, and directive names are validated earlier at parsing time
 		cmdArgs = append(cmdArgs, "--build-arg", fmt.Sprintf("%s=%s", key, buildCfg.Args[key]))
 	}
 	cmdArgs = append(cmdArgs, "--build-arg", "DOTFILES_DIR="+relativeDotfilesDir)
