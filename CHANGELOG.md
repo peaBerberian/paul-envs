@@ -4,9 +4,15 @@
 
 ### Changes
 
+- Remove `.env` and `compose.yaml` configuration in profit of `build.conf` and `run.conf` files whose influence (necessitate a re-build or not) is much clearer
 - make `mise` opt-out, not opt-in, as it is basically needed for fine-grained versions for language tooling
-- tui: separate agent step from tools step to be more readable
 - for languages `latest` now means the latest published stable version of a language, not whatever is present in Ubuntu's repositories
+
+### Features
+
+- Stop the need for a `compose`-compatible tool (`docker compose` or `podman-compose`), just the base container engine (`docker` or `podman`) is needed now
+- Don't re-build if only run-associated config is fixed
+- tui: separate agent step from tools step to be more readable
 
 ### Bug fixes
 
