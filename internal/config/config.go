@@ -98,6 +98,7 @@ type Config struct {
 	InstallOpenCode   bool
 	InstallClaudeCode bool
 	InstallCodex      bool
+	InstallChrome     bool
 	InstallFirefox    bool
 
 	Ports    []uint16

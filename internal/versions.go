@@ -24,9 +24,10 @@ var Version = utils.Version{
 //   - 1.4.0: Added `userns_mode: keep-id` (compose.yml) to align podman-compose with Docker
 //     Redirect in Dockerfile `.claude` and `.codex` to XDG_DATA_HOME for persistence
 //   - 1.5.0: Set envs (XDG_* etc.) in global shellrc confs, so it's available in login shells
+//   - 1.6.0: Added `INSTALL_CHROME` env
 var DockerfileVersion = utils.Version{
 	Major: 1,
-	Minor: 5,
+	Minor: 6,
 	Patch: 0,
 }
 

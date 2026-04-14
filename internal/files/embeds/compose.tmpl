@@ -1,4 +1,4 @@
-# Compose File Version: 1.5.0
+# Compose File Version: 1.6.0
 #
 # "Compose file" for your project, which will be relied on when building and
 # running your container alongside the `env file` in the same directory.
@@ -64,6 +64,7 @@ services:
         INSTALL_OPEN_CODE: ${INSTALL_OPEN_CODE:-false}
         INSTALL_CLAUDE_CODE: ${INSTALL_CLAUDE_CODE:-false}
         INSTALL_CODEX: ${INSTALL_CODEX:-false}
+        INSTALL_CHROME: ${INSTALL_CHROME:-false}
         INSTALL_FIREFOX: ${INSTALL_FIREFOX:-false}
         INSTALL_NODE: ${INSTALL_NODE:-none}
         INSTALL_RUST: ${INSTALL_RUST:-none}

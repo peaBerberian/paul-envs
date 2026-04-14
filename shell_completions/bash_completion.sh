@@ -9,7 +9,7 @@ _paulenvs()
     local commands="create list build run remove version interactive help clean"
 
     # Options for create command
-    local create_flags="--name --uid --gid --username --shell --nodejs --rust --python --go --git-name --git-email --package --enable-ssh --enable-sudo --neovim --starship --oh-my-posh --atuin --zellij --jujutsu --delta --open-code --claude-code --codex --firefox --no-mise --port --volume"
+    local create_flags="--name --uid --gid --username --shell --nodejs --rust --python --go --git-name --git-email --package --enable-ssh --enable-sudo --neovim --starship --oh-my-posh --atuin --zellij --jujutsu --delta --open-code --claude-code --codex --chrome --firefox --no-mise --port --volume"
 
     # Options for list command
     local list_flags="--names"

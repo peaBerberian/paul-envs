@@ -1,4 +1,4 @@
-# Dockerfile - Version: 1.5.0
+# Dockerfile - Version: 1.6.0
 # ===========================
 #
 # This "Dockerfile" sets a basic Ubuntu LTS environment with a shell, the wanted
@@ -84,6 +84,7 @@ ARG INSTALL_DELTA=false
 ARG INSTALL_OPEN_CODE=false
 ARG INSTALL_CLAUDE_CODE=false
 ARG INSTALL_CODEX=false
+ARG INSTALL_CHROME=false
 ARG INSTALL_FIREFOX=false
 ARG INSTALL_NODE=none
 ARG INSTALL_RUST=none
@@ -143,7 +144,39 @@ RUN if [ -n "$SUPPLEMENTARY_PACKAGES" ]; then \
     apt-get update && apt-get install -y $SUPPLEMENTARY_PACKAGES && rm -rf /var/lib/apt/lists/*; \
   fi
 
-# Install Firefox (optional, headless for testing)
+# Install Chrome (optional, e.g. for testing)
+RUN if [ "$INSTALL_CHROME" = "true" ]; then \
+    apt-get update && apt-get install -y wget ca-certificates; \
+    ARCH=$(uname -m); \
+    if [ "$ARCH" = "x86_64" ]; then \
+        wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb; \
+        apt-get install -y ./google-chrome-stable_current_amd64.deb; \
+        ln -sf /usr/bin/google-chrome /usr/local/bin/chrome; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        apt-get install -y chromium || apt-get install -y chromium; \
+        ln -sf $(which chromium || which chromium) /usr/local/bin/chrome; \
+    else \
+        echo "Unsupported arch"; exit 1; \
+    fi; \
+fi
+
+RUN if [ "$INSTALL_CHROME" = "true" ]; then \
+    if [ "$(uname -m)" = "aarch64" ]; then \
+        echo "WARNING: Chrome and Chromium are not supported on ARM architecture for now, skipping installation."; \
+    else \
+        apt-get update && apt-get install -y curl ca-certificates; \
+        ARCH=$(uname -m); \
+        if [ "$ARCH" = "x86_64" ]; then \
+            curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb; \
+            apt-get install -y ./google-chrome-stable_current_amd64.deb; \
+            ln -sf /usr/bin/google-chrome /usr/local/bin/chrome; \
+        else \
+            echo "ERROR: Unsupported architecture: $ARCH"; exit 1; \
+        fi; \
+    fi; \
+fi
+
+# Install Firefox (optional, e.g. for testing)
 RUN if [ "$INSTALL_FIREFOX" = "true" ]; then \
     apt-get update && apt-get install -y \
       software-properties-common \
