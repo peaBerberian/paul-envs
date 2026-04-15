@@ -152,38 +152,35 @@ func newCreateFlagSet(p *parsedFlags, noPrompt *bool, cons *console.Console) *fl
 
 	flagset.BoolVar(noPrompt, "no-prompt", false, "Non-interactive mode")
 	flagset.BoolVar(&p.seedDotfiles, "seed-dotfiles", false, "Seed the project dotfiles directory from the global template")
-	flagset.StringVar(&p.name, "name", "", "Project name")
-	flagset.StringVar(&p.uid, "uid", "", "Container UID")
-	flagset.StringVar(&p.gid, "gid", "", "Container GID")
-	flagset.StringVar(&p.username, "username", "", "Container username")
-	flagset.StringVar(&p.shell, "shell", "", "User shell: bash|zsh|fish")
-	flagset.StringVar(&p.nodeVersion, "nodejs", "", "Node.js version: none|latest|X.Y.Z")
-	flagset.StringVar(&p.rustVersion, "rust", "", "Rust version: none|latest|X.Y.Z")
-	flagset.StringVar(&p.pythonVersion, "python", "", "Python version: none|latest|X.Y.Z")
-	flagset.StringVar(&p.goVersion, "go", "", "Go version: none|latest|X.Y.Z")
-	flagset.BoolVar(&p.enableWasm, "enable-wasm", false, "Enable WebAssembly tools")
-	flagset.BoolVar(&p.enableWasm, "wasm", false, "Enable WebAssembly tools")
-	flagset.BoolVar(&p.enableSsh, "enable-ssh", false, "Enable SSH access")
-	flagset.BoolVar(&p.enableSsh, "ssh", false, "Enable SSH access")
-	flagset.BoolVar(&p.enableSudo, "enable-sudo", false, "Enable sudo access")
-	flagset.BoolVar(&p.enableSudo, "sudo", false, "Enable sudo access")
-	flagset.StringVar(&p.gitName, "git-name", "", "Git user name")
-	flagset.StringVar(&p.gitEmail, "git-email", "", "Git user email")
-	flagset.BoolVar(&p.installNeovim, "neovim", false, "Install Neovim")
-	flagset.BoolVar(&p.installStarship, "starship", false, "Install Starship")
-	flagset.BoolVar(&p.installOhMyPosh, "oh-my-posh", false, "Install Oh My Posh")
-	flagset.BoolVar(&p.noMise, "no-mise", false, "Disable Mise-managed language installation")
-	flagset.BoolVar(&p.installAtuin, "atuin", false, "Install Atuin")
-	flagset.BoolVar(&p.installZellij, "zellij", false, "Install Zellij")
-	flagset.BoolVar(&p.installJujutsu, "jujutsu", false, "Install Jujutsu")
-	flagset.BoolVar(&p.installDelta, "delta", false, "Install Delta")
-	flagset.BoolVar(&p.installOpenCode, "open-code", false, "Install Open Code")
-	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
-	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
-	flagset.BoolVar(&p.installFirefox, "firefox", false, "Install Mozilla Firefox")
-	flagset.Var((*stringSliceFlag)(&p.packages), "package", "Additional Ubuntu package (repeatable)")
-	flagset.Var((*stringSliceFlag)(&p.ports), "port", "Expose container port (repeatable)")
-	flagset.Var((*stringSliceFlag)(&p.volumes), "volume", "Mount volume as HOST:CONT[:ro] (repeatable)")
+	flagset.StringVar(&p.name, "name", "", "How to name that project. If not specified, the project's directory name will be used instead.")
+	flagset.StringVar(&p.uid, "uid", "", "UID to rely on in the container. Your current one will be used as a safe default if unspecified, or \"1000\" on Windows.")
+	flagset.StringVar(&p.gid, "gid", "", "GID to rely on in the container. Your current one will be used as a safe default if unspecified, or \"1000\" on Windows.")
+	flagset.StringVar(&p.username, "username", "", "Username that will be used in the container. \"dev\" when not specified.")
+	flagset.StringVar(&p.shell, "shell", "", "Default shell when running the container. Can be \"bash\", \"zsh\" or \"fish\". \"bash\" by default.")
+	flagset.StringVar(&p.nodeVersion, "nodejs", "", "Add Node.js and npm to the container.\n\nAccepted values: \"none\" (not installed), \"latest\", or an explicit X.Y.Z version.\n\nDefault: \"none\".")
+	flagset.StringVar(&p.rustVersion, "rust", "", "Add Rust and cargo to the container.\n\nAccepted values: \"none\" (not installed), \"latest\", or an explicit X.Y.Z version.\n\nDefault: \"none\".")
+	flagset.StringVar(&p.pythonVersion, "python", "", "Add Python to the container.\n\nAccepted values: \"none\" (not installed), \"latest\", or an explicit X.Y.Z version.\n\nDefault: \"none\".")
+	flagset.StringVar(&p.goVersion, "go", "", "Add Go to the container.\n\nAccepted values: \"none\" (not installed), \"latest\", or an explicit X.Y.Z version.\n\nDefault: \"none\".")
+	flagset.BoolVar(&p.enableWasm, "enable-wasm", false, "Add WASM tools in the container: binaryen, Rust WASM target if Rust is enabled.")
+	flagset.BoolVar(&p.enableSsh, "enable-ssh", false, "Enable SSH access to the container, to e.g. allow your host to easily access its files.")
+	flagset.BoolVar(&p.enableSudo, "enable-sudo", false, "Install sudo in the container with root password:\"dev\"")
+	flagset.StringVar(&p.gitName, "git-name", "", "The git user name to use in the container. Not overwritten by default")
+	flagset.StringVar(&p.gitEmail, "git-email", "", "The git e-mail address to use in the container. Not overwritten by default")
+	flagset.BoolVar(&p.installNeovim, "neovim", false, "Add the Neovim editor to the container")
+	flagset.BoolVar(&p.installStarship, "starship", false, "Add Starship (prompt) to the container")
+	flagset.BoolVar(&p.installOhMyPosh, "oh-my-posh", false, "Add Oh My Posh (prompt) to the container")
+	flagset.BoolVar(&p.noMise, "no-mise", false, "Prevent installation of \"mise\", which is used to install languages in specific versions")
+	flagset.BoolVar(&p.installAtuin, "atuin", false, "Add Atuin (shell history tool) to the container")
+	flagset.BoolVar(&p.installZellij, "zellij", false, "Add Zellij (terminal multiplexer) to the container")
+	flagset.BoolVar(&p.installJujutsu, "jujutsu", false, "Add Jujutsu (VCS) to the container")
+	flagset.BoolVar(&p.installDelta, "delta", false, "Add Delta (diff tool and pager) to the container")
+	flagset.BoolVar(&p.installOpenCode, "open-code", false, "Add OpenCode (LLM agentic tool) to the container")
+	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Add Claude Code (LLM agentic tool) to the container")
+	flagset.BoolVar(&p.installCodex, "codex", false, "Add Codex (LLM agentic tool) to the container")
+	flagset.BoolVar(&p.installFirefox, "firefox", false, "Add Mozilla Firefox (Web browser) to the container")
+	flagset.Var((*stringSliceFlag)(&p.packages), "package", "Additional Ubuntu package to install in the container. This option can be repeated for multiple packages")
+	flagset.Var((*stringSliceFlag)(&p.ports), "port", "Expose container port. This option can be repeated for exposing multiple ports")
+	flagset.Var((*stringSliceFlag)(&p.volumes), "volume", "Mount volume in the container, as HOST:CONT[:ro]. This option can be repeated for mounting multiple volumes")
 
 	flagset.Usage = func() {
 		if cons == nil {
@@ -194,12 +191,14 @@ func newCreateFlagSet(p *parsedFlags, noPrompt *bool, cons *console.Console) *fl
 		cons.WriteLn("")
 		cons.WriteLn("Create a project configuration for a development container.")
 		cons.WriteLn("")
+		cons.WriteLn("Just call it with a path and no flag to be guided into its configuration.")
+		cons.WriteLn("Alternatively, you can directly configure one without being prompted by setting the right flags directly.")
+		cons.WriteLn("")
 		cons.WriteLn("Examples:")
 		cons.WriteLn("  paul-envs create ~/projects/myapp")
-		cons.WriteLn("  paul-envs create ~/projects/myapp --no-prompt --shell bash --nodejs latest")
-		cons.WriteLn("  paul-envs create ~/projects/myapp --package ripgrep --package fd-find")
+		cons.WriteLn("  paul-envs create ~/projects/myapp --no-prompt --shell bash --nodejs latest --neovim")
 		cons.WriteLn("")
-		cons.WriteLn("Flags:")
+		cons.WriteLn("Flags (only if you already know what you want):")
 		clihelp.PrintDefaults(cons, flagset)
 	}
 	return flagset
@@ -528,14 +527,6 @@ func filterValidPackages(packages []string) ([]string, []string) {
 func hasAnyLanguage(cfg *config.Config) bool {
 	return cfg.InstallNode != "" || cfg.InstallRust != "" ||
 		cfg.InstallPython != "" || cfg.InstallGo != "" || cfg.EnableWasm
-}
-
-func hasAnyTool(cfg *config.Config) bool {
-	return cfg.InstallNeovim || cfg.InstallStarship ||
-		cfg.InstallOhMyPosh || cfg.InstallAtuin ||
-		cfg.InstallZellij || cfg.InstallJujutsu || cfg.InstallDelta ||
-		cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex ||
-		cfg.InstallFirefox
 }
 
 func hasAnyDevTool(cfg *config.Config) bool {
