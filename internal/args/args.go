@@ -359,8 +359,12 @@ func promptMissing(cons *console.Console, cfg *config.Config) error {
 	}
 
 	// Languages
-	if !hasAnyLanguage(cfg) {
-		cons.WriteLn("")
+	cons.WriteLn("")
+	if hasAnyLanguage(cfg) {
+		if err := confirmLanguageSelection(cons, cfg); err != nil {
+			return err
+		}
+	} else {
 		if err := promptLanguages(cons, cfg, cfg.InstallMise); err != nil {
 			return err
 		}
@@ -381,9 +385,12 @@ func promptMissing(cons *console.Console, cfg *config.Config) error {
 	}
 
 	// Tools
-	hasTool := hasAnyTool(cfg)
-	if !hasTool {
-		cons.WriteLn("")
+	cons.WriteLn("")
+	if hasAnyDevTool(cfg) {
+		if err := confirmDevToolSelection(cons, cfg); err != nil {
+			return err
+		}
+	} else {
 		if err := promptTools(cons, cfg); err != nil {
 			return err
 		}
@@ -391,8 +398,12 @@ func promptMissing(cons *console.Console, cfg *config.Config) error {
 	if cfg.InstallStarship && cfg.InstallOhMyPosh {
 		return fmt.Errorf("Starship and Oh My Posh cannot both be enabled — choose at most one prompt")
 	}
-	if !hasTool {
-		cons.WriteLn("")
+	cons.WriteLn("")
+	if hasAnyAgenticTool(cfg) {
+		if err := confirmAgenticToolSelection(cons, cfg); err != nil {
+			return err
+		}
+	} else {
 		if err := promptAgenticTool(cons, cfg); err != nil {
 			return err
 		}
@@ -527,6 +538,17 @@ func hasAnyTool(cfg *config.Config) bool {
 		cfg.InstallFirefox
 }
 
+func hasAnyDevTool(cfg *config.Config) bool {
+	return cfg.InstallNeovim || cfg.InstallStarship ||
+		cfg.InstallOhMyPosh || cfg.InstallAtuin ||
+		cfg.InstallZellij || cfg.InstallJujutsu ||
+		cfg.InstallDelta || cfg.InstallFirefox
+}
+
+func hasAnyAgenticTool(cfg *config.Config) bool {
+	return cfg.InstallOpenCode || cfg.InstallClaudeCode || cfg.InstallCodex
+}
+
 func needsExactVersion(version string) bool {
 	return version != "" && version != config.VersionNone && version != config.VersionLatest
 }
@@ -575,6 +597,136 @@ func promptDotfilesSeed(cons *console.Console, filestor *files.FileStore, cfg *c
 	}
 	cfg.SeedDotfiles = choice
 	return nil
+}
+
+func confirmLanguageSelection(cons *console.Console, cfg *config.Config) error {
+	cons.Info("=== Language Runtimes ===")
+	cons.WriteLn("Preselected language runtimes from CLI/config: %s", strings.Join(selectedLanguages(cfg), ", "))
+	keep, err := cons.AskYesNo("Keep this language selection and skip the full language chooser?", true)
+	if err != nil {
+		return fmt.Errorf("unable to confirm language choice: %w", err)
+	}
+	if keep {
+		return nil
+	}
+	resetLanguages(cfg)
+	return promptLanguages(cons, cfg, cfg.InstallMise)
+}
+
+func confirmDevToolSelection(cons *console.Console, cfg *config.Config) error {
+	cons.Info("=== Development Tools ===")
+	cons.WriteLn("Preselected development tools from CLI/config: %s", strings.Join(selectedDevTools(cfg), ", "))
+	keep, err := cons.AskYesNo("Keep this tool selection and skip the full tool chooser?", true)
+	if err != nil {
+		return fmt.Errorf("unable to confirm tool choice: %w", err)
+	}
+	if keep {
+		return nil
+	}
+	resetDevTools(cfg)
+	return promptTools(cons, cfg)
+}
+
+func confirmAgenticToolSelection(cons *console.Console, cfg *config.Config) error {
+	cons.Info("=== LLM Agent ===")
+	cons.WriteLn("Preselected agentic tools from CLI/config: %s", strings.Join(selectedAgenticTools(cfg), ", "))
+	keep, err := cons.AskYesNo("Keep this agentic tool selection and skip the full agent chooser?", true)
+	if err != nil {
+		return fmt.Errorf("unable to confirm agentic tool choice: %w", err)
+	}
+	if keep {
+		return nil
+	}
+	resetAgenticTools(cfg)
+	return promptAgenticTool(cons, cfg)
+}
+
+func selectedLanguages(cfg *config.Config) []string {
+	selected := make([]string, 0, 5)
+	if cfg.InstallNode != "" && cfg.InstallNode != config.VersionNone {
+		selected = append(selected, fmt.Sprintf("Node.js (%s)", cfg.InstallNode))
+	}
+	if cfg.InstallRust != "" && cfg.InstallRust != config.VersionNone {
+		selected = append(selected, fmt.Sprintf("Rust (%s)", cfg.InstallRust))
+	}
+	if cfg.InstallPython != "" && cfg.InstallPython != config.VersionNone {
+		selected = append(selected, fmt.Sprintf("Python (%s)", cfg.InstallPython))
+	}
+	if cfg.InstallGo != "" && cfg.InstallGo != config.VersionNone {
+		selected = append(selected, fmt.Sprintf("Go (%s)", cfg.InstallGo))
+	}
+	if cfg.EnableWasm {
+		selected = append(selected, "WebAssembly tools")
+	}
+	return selected
+}
+
+func selectedDevTools(cfg *config.Config) []string {
+	selected := make([]string, 0, 8)
+	if cfg.InstallNeovim {
+		selected = append(selected, "Neovim")
+	}
+	if cfg.InstallStarship {
+		selected = append(selected, "Starship")
+	}
+	if cfg.InstallOhMyPosh {
+		selected = append(selected, "Oh My Posh")
+	}
+	if cfg.InstallAtuin {
+		selected = append(selected, "Atuin")
+	}
+	if cfg.InstallZellij {
+		selected = append(selected, "Zellij")
+	}
+	if cfg.InstallJujutsu {
+		selected = append(selected, "Jujutsu")
+	}
+	if cfg.InstallDelta {
+		selected = append(selected, "Delta")
+	}
+	if cfg.InstallFirefox {
+		selected = append(selected, "Firefox")
+	}
+	return selected
+}
+
+func selectedAgenticTools(cfg *config.Config) []string {
+	selected := make([]string, 0, 3)
+	if cfg.InstallOpenCode {
+		selected = append(selected, "opencode")
+	}
+	if cfg.InstallClaudeCode {
+		selected = append(selected, "Claude Code")
+	}
+	if cfg.InstallCodex {
+		selected = append(selected, "codex")
+	}
+	return selected
+}
+
+func resetLanguages(cfg *config.Config) {
+	cfg.InstallNode = ""
+	cfg.InstallRust = ""
+	cfg.InstallPython = ""
+	cfg.InstallGo = ""
+	cfg.EnableWasm = false
+}
+
+func resetDevTools(cfg *config.Config) {
+	cfg.InstallNeovim = false
+	cfg.InstallStarship = false
+	cfg.InstallOhMyPosh = false
+	cfg.InstallAtuin = false
+	cfg.InstallZellij = false
+	cfg.InstallJujutsu = false
+	cfg.InstallDelta = false
+	cfg.InstallFirefox = false
+}
+
+func resetAgenticTools(cfg *config.Config) {
+	cfg.InstallOpenCode = false
+	cfg.InstallClaudeCode = false
+	cfg.InstallCodex = false
 }
 
 // Prompt functions

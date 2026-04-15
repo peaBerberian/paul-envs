@@ -177,3 +177,60 @@ func TestParseFlags_ReturnsHelpError(t *testing.T) {
 		t.Fatalf("expected flag.ErrHelp, got %v", err)
 	}
 }
+
+func TestPromptMissing_ConfirmsPrefilledLanguages(t *testing.T) {
+	var out bytes.Buffer
+	cfg := config.New("dev", config.ShellZsh)
+	cfg.InstallNode = config.VersionLatest
+	cfg.EnableSudo = true
+	cfg.EnableSsh = true
+	cfg.Packages = []string{"git"}
+	cfg.Ports = []uint16{3000}
+	cfg.Volumes = []string{"/tmp:/tmp"}
+
+	cons := console.New(context.Background(), strings.NewReader("\n\n\n"), &out, &bytes.Buffer{})
+
+	if err := promptMissing(cons, &cfg); err != nil {
+		t.Fatalf("promptMissing() error = %v", err)
+	}
+	if cfg.InstallNode != config.VersionLatest {
+		t.Fatalf("InstallNode = %q, want %q", cfg.InstallNode, config.VersionLatest)
+	}
+	output := out.String()
+	if !strings.Contains(output, "Preselected language runtimes from CLI/config: Node.js (latest)") {
+		t.Fatalf("missing language confirmation output:\n%s", output)
+	}
+	if strings.Contains(output, "Which language runtimes do you need?") {
+		t.Fatalf("did not expect full language prompt after keeping selection:\n%s", output)
+	}
+}
+
+func TestPromptMissing_RepromptsPrefilledDevTools(t *testing.T) {
+	var out bytes.Buffer
+	cfg := config.New("dev", config.ShellZsh)
+	cfg.InstallNeovim = true
+	cfg.EnableSudo = true
+	cfg.EnableSsh = true
+	cfg.Packages = []string{"git"}
+	cfg.Ports = []uint16{3000}
+	cfg.Volumes = []string{"/tmp:/tmp"}
+
+	cons := console.New(context.Background(), strings.NewReader("\nn\n2 4\n\n"), &out, &bytes.Buffer{})
+
+	if err := promptMissing(cons, &cfg); err != nil {
+		t.Fatalf("promptMissing() error = %v", err)
+	}
+	if cfg.InstallNeovim {
+		t.Fatal("expected Neovim to be cleared after reselecting tools")
+	}
+	if !cfg.InstallStarship || !cfg.InstallAtuin {
+		t.Fatalf("expected Starship and Atuin to be selected, got starship=%v atuin=%v", cfg.InstallStarship, cfg.InstallAtuin)
+	}
+	output := out.String()
+	if !strings.Contains(output, "Preselected development tools from CLI/config: Neovim") {
+		t.Fatalf("missing tool confirmation output:\n%s", output)
+	}
+	if !strings.Contains(output, "Which of those tools do you want to install?") {
+		t.Fatalf("expected full tool prompt after rejecting preselection:\n%s", output)
+	}
+}
