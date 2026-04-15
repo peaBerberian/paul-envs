@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 
@@ -14,7 +15,18 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 	nameOnly := false
 	flagset := flag.NewFlagSet("list", flag.ContinueOnError)
 	flagset.BoolVar(&nameOnly, "names", false, "Only display names")
+	flagset.Usage = func() {
+		console.WriteLn("Usage: paul-envs list [flags]")
+		console.WriteLn("")
+		console.WriteLn("List all projects and their current status.")
+		console.WriteLn("")
+		console.WriteLn("Flags:")
+		flagset.PrintDefaults() // prints -names with its description automatically
+	}
 	if err := flagset.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 

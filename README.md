@@ -14,6 +14,14 @@ itself can take place inside the container._
 `paul-envs` is both a wrapper over container-engine `build` / `run` workflows
 (`docker` or `podman`) and a configuration generator for them.
 
+There are two separate goals for this tool:
+
+- to allow for a clean ephemeral environment to dev on various projects directly in the
+  container without fearing about poor platform compatibility or environment pollution
+
+- to let LLM agents and other tools iterate inside those while letting you more control
+  on what they can do and what they can see.
+
 Each of the created containers is similar in a way to [dev
 containers](https://containers.dev/) in that they are targeted for development
 usages but mine is optimized for multi-projects workflows and CLI-heavy usage.
@@ -282,6 +290,7 @@ will be removed when the container is exited).
 
 - help flag per commands
 - Ask which container engine to use if both podman and docker are available
+- Better dotfiles management
 - Make `build` / `run` / `remove` / `clean` behavior adaptive if multiple container
   engine are installed: look at the one used at build time etc.
 - Add "init bash / zsh / fish" commands to simplify auto-completion setups

@@ -54,7 +54,21 @@ func main() {
 	case "interactive", "i", "--interactive", "-i":
 		cmdErr = commands.Interactive(ctx, filestore, console)
 	case "help", "h", "--help", "-h":
-		commands.Help(filestore, console)
+		if len(args) > 0 {
+			// Delegate: "paul-envs help list" → "paul-envs list --help"
+			subArgs := append(args[1:], "--help")
+			switch args[0] {
+			case "list", "ls", "l":
+				commands.List(ctx, subArgs, filestore, console)
+			case "build", "b":
+				commands.Build(ctx, subArgs, filestore, console)
+			// ... other subcommands
+			default:
+				console.Error("Unknown command: %s", args[0])
+			}
+		} else {
+			commands.Help(filestore, console)
+		}
 	default:
 		console.Error("Error: unknown command: %s", cmd)
 		console.Error("Run with --help to have a list of authorized commands")
