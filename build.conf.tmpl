@@ -19,7 +19,7 @@
 # the corresponding project and propose you to rebuild the image with those new
 # parameters.
 #
-# Note that there's another file in the same directory, "runtime.conf.tmpl",
+# Note that there's another file in the same directory, "run.conf",
 # which contains properties only used when "running" the image: mounted
 # directories, ports etc.
 # This other file does not necessitate a re-build when updated.
@@ -100,14 +100,6 @@ INSTALL_FIREFOX {{.InstallFirefox}}
 # Have to be in Ubuntu's default repository
 # (e.g. "ripgrep fzf". Can be left empty for no supplementary packages)
 SUPPLEMENTARY_PACKAGES {{.Packages}}
-
-# Git author and committer name used inside the container
-# Can also be empty to not set that in the container.
-GIT_AUTHOR_NAME {{.GitName}}
-
-# Git author and committer e-mail used inside the container
-# Can also be empty to not set that in the container.
-GIT_AUTHOR_EMAIL {{.GitEmail}}
 
 # To align with your current uid.
 # This is to ensure the mounted volume from your host has compatible

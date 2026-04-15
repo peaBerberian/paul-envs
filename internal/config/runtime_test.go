@@ -39,6 +39,15 @@ func TestLoadRuntimeConfig_Minimal(t *testing.T) {
 	if cfg.WorkDir != "" {
 		t.Errorf("WorkDir: want empty, got %q", cfg.WorkDir)
 	}
+	if cfg.DotfilesPath != "" {
+		t.Errorf("DotfilesPath: want empty, got %q", cfg.DotfilesPath)
+	}
+	if cfg.GitName != "" {
+		t.Errorf("GitName: want empty, got %q", cfg.GitName)
+	}
+	if cfg.GitEmail != "" {
+		t.Errorf("GitEmail: want empty, got %q", cfg.GitEmail)
+	}
 }
 
 func TestLoadRuntimeConfig_AllDirectives(t *testing.T) {
@@ -49,6 +58,9 @@ VOLUME /host/logs:/container/logs
 PORT 8080:80
 PORT 5432:5432
 WORKDIR /container/data
+DOTFILES_PATH ./dotfiles
+GIT_AUTHOR_NAME Jane Doe
+GIT_AUTHOR_EMAIL jane@example.com
 `
 	cfg, err := LoadRuntimeConfig(writeConf(t, content))
 	if err != nil {
@@ -67,6 +79,15 @@ WORKDIR /container/data
 
 	if cfg.WorkDir != "/container/data" {
 		t.Errorf("WorkDir: want /container/data, got %q", cfg.WorkDir)
+	}
+	if cfg.DotfilesPath != "./dotfiles" {
+		t.Errorf("DotfilesPath: want ./dotfiles, got %q", cfg.DotfilesPath)
+	}
+	if cfg.GitName != "Jane Doe" {
+		t.Errorf("GitName: want Jane Doe, got %q", cfg.GitName)
+	}
+	if cfg.GitEmail != "jane@example.com" {
+		t.Errorf("GitEmail: want jane@example.com, got %q", cfg.GitEmail)
 	}
 }
 
@@ -129,6 +150,24 @@ func TestLoadRuntimeConfig_LastWorkdirWins(t *testing.T) {
 	}
 	if cfg.WorkDir != "/second" {
 		t.Errorf("WorkDir: want /second, got %q", cfg.WorkDir)
+	}
+}
+
+func TestLoadRuntimeConfig_LastRuntimeIdentityWins(t *testing.T) {
+	content := "PATH /srv/myproject\nDOTFILES_PATH ./one\nDOTFILES_PATH ./two\nGIT_AUTHOR_NAME One\nGIT_AUTHOR_NAME Two\nGIT_AUTHOR_EMAIL one@example.com\nGIT_AUTHOR_EMAIL two@example.com\n"
+	content = "VERSION 1.0.0\n" + content
+	cfg, err := LoadRuntimeConfig(writeConf(t, content))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.DotfilesPath != "./two" {
+		t.Errorf("DotfilesPath: want ./two, got %q", cfg.DotfilesPath)
+	}
+	if cfg.GitName != "Two" {
+		t.Errorf("GitName: want Two, got %q", cfg.GitName)
+	}
+	if cfg.GitEmail != "two@example.com" {
+		t.Errorf("GitEmail: want two@example.com, got %q", cfg.GitEmail)
 	}
 }
 

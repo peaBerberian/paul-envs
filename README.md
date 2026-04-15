@@ -231,46 +231,34 @@ paul-envs clean
 
 ### Note: The dotfiles directory
 
-The "dotfiles directory" is a special location that will be merged with the home
-directory of an image on a `build` command.
+Each generated project now gets its own `dotfiles/` directory next to
+`build.conf` and `run.conf`.
 
-As such you can put a `.bashrc` directly in there, and the config for
-the tools you planned to install (e.g. the `starship` configuration file:
-`starship.toml`, a `nvim` directory for `neovim` etc.):
+That path is referenced from `run.conf` through `DOTFILES_PATH`, which defaults
+to the project-local `dotfiles/` directory. On container start, paul-envs mounts
+that directory read-only and syncs its contents into the container user's
+`$HOME`.
+
+This means:
+
+- `build.conf` only controls image capabilities and still determines rebuilds.
+- `run.conf` controls session behavior such as bind mounts, ports, git identity,
+  and dotfiles sync.
+- changing files under `dotfiles/` does not invalidate the built image.
+
+The dotfiles sync is broad by default, so you can keep normal sibling file
+layouts such as:
 ```
-dotfiles_dir/
+dotfiles/
 ├── .bashrc
 └── .config/
-    ├── starship.toml (config for the starship tool)
+    ├── starship.toml
     └── nvim/
-        └── ... (your neovim config)
 ```
 
-All its content will be copied as is unmodified, with two exceptions:
-
-1.  shell files  (`.bashrc`, `.zshrc` and/or `.config/fish/config.fish` files)
-    may still be updated after being copied in the dockerfile to redirect their
-    history to ensure history persistence.
-
-2.  The git config file (generally `~/.gitconfig`) may also be updated after
-    being copied in the container to set the name and e-mail information you
-    configured in your build config.
-
-Because those are the only exceptions, if you plan to overwrite one of those
-shell files, you will need to add the tool initialization commands in them
-yourself (e.g. `eval "$(starship init bash)"` for initializing `starship` in the
-bash shell in your `.bashrc`).
-If you're not overwriting those files however, the default provided one will
-already contain the initialization code for all the tools explicitely listed in
-the dockerfile.
-
-The job of copying the dotfiles directory's content is taken by the
-`Dockerfile`. Meaning that you'll profit from this even if you're not relying on
-`paul-envs`.
-
-If you don't go through `paul-envs`, you will have to pass the `DOTFILES_DIR`
-build argument yourself so it points to the dotfiles directory you defined.
-When relying on `paul-envs`, a directory will be created for you.
+paul-envs keeps a small set of runtime-owned paths out of that sync, including
+`.container-cache/`, `.container-local/`, `.initial-cache/`, `.initial-local/`,
+and the generated `.container-overrides.*` files used for shell integration.
 
 ## What gets preserved vs. ephemeral
 
@@ -290,7 +278,6 @@ will be removed when the container is exited).
 
 - help flag per commands
 - Ask which container engine to use if both podman and docker are available
-- Better dotfiles management
 - Make `build` / `run` / `remove` / `clean` behavior adaptive if multiple container
   engine are installed: look at the one used at build time etc.
 - Add "init bash / zsh / fish" commands to simplify auto-completion setups

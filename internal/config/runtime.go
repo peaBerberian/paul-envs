@@ -9,11 +9,14 @@ import (
 
 // RuntimeConfig holds the parsed contents of a run.conf file.
 type RuntimeConfig struct {
-	Version     utils.Version
-	ProjectPath string
-	Volumes     []string
-	Ports       []string
-	WorkDir     string // optional; defaults to the project mount target if empty
+	Version      utils.Version
+	ProjectPath  string
+	Volumes      []string
+	Ports        []string
+	WorkDir      string // optional; defaults to the project mount target if empty
+	DotfilesPath string // optional; if set, mounted read-only and synced into $HOME on start
+	GitName      string // optional; applied to git/jj at container start
+	GitEmail     string // optional; applied to git/jj at container start
 }
 
 // LoadRuntimeConfig parses the run.conf file at path and returns a
@@ -41,6 +44,12 @@ func LoadRuntimeConfig(path string) (RuntimeConfig, error) {
 			cfg.Ports = append(cfg.Ports, d.Value)
 		case "WORKDIR":
 			cfg.WorkDir = d.Value
+		case "DOTFILES_PATH":
+			cfg.DotfilesPath = d.Value
+		case "GIT_AUTHOR_NAME":
+			cfg.GitName = d.Value
+		case "GIT_AUTHOR_EMAIL":
+			cfg.GitEmail = d.Value
 		default:
 			return RuntimeConfig{}, fmt.Errorf("%s: unknown directive %q", filepath.Base(path), d.Key)
 		}

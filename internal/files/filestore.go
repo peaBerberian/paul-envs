@@ -2,7 +2,6 @@ package files
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -136,49 +135,6 @@ func (f *FileStore) GetAllProjects() ([]ProjectEntry, error) {
 	return entries, nil
 }
 
-// Ensure the "dotfiles" directory in paul-envs' config directory is created and
-// return its path so you can advertise it to the user.
-func (f *FileStore) InitGlobalDotfilesDir() (string, error) {
-	dotfilesDir := filepath.Join(f.baseConfigDir, "dotfiles")
-	if err := f.userFS.MkdirAsUser(dotfilesDir, 0755); err != nil {
-		return "", fmt.Errorf("create base config directory: %w", err)
-	}
-	return dotfilesDir, nil
-}
-
-// Copy the content of the "dotfiles" directory of paul-envs to the given
-// `destDir` path.
-//
-// Returns the relative path (from the Dockerfile base) of the created
-// project-specific dotfiles dir (should be removed) when finished, or an error
-// if it failed.
-func (f *FileStore) CreateProjectDotfilesDir(ctx context.Context, projectName string) (string, error) {
-	if !f.DoesProjectExist(projectName) {
-		return "", fmt.Errorf("cannot copy dotfiles for project '%s': this project does not exist", projectName)
-	}
-	destDir := filepath.Join(f.getProjectInternalDir(projectName), "nextdotfiles")
-	if err := os.RemoveAll(destDir); err != nil {
-		return "", fmt.Errorf("cannot copy dotfiles because %s cannot be removed: %w", destDir, err)
-	}
-	dotfilesDir, err := f.InitGlobalDotfilesDir()
-	if err != nil {
-		return "", err
-	}
-	if err := f.userFS.CopyDirAsUser(ctx, dotfilesDir, destDir); err != nil {
-		return "", fmt.Errorf("cannot copy dotfiles to '%s': %w", destDir, err)
-	}
-	relativeDotfilesDir, err := filepath.Rel(f.baseDataDir, destDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to construct dotfiles relative path: %w", err)
-	}
-
-	return relativeDotfilesDir, nil
-}
-func (f *FileStore) RemoveProjectDotfilesDir(projectName string) error {
-	expectedDir := filepath.Join(f.getProjectInternalDir(projectName), "nextdotfiles")
-	return os.RemoveAll(expectedDir)
-}
-
 // Get path to the given project's build config file.
 // TODO: make private
 func (f *FileStore) GetProjectBuildConfigPath(name string) string {
@@ -189,6 +145,11 @@ func (f *FileStore) GetProjectBuildConfigPath(name string) string {
 // TODO: make private
 func (f *FileStore) GetProjectRuntimeConfigPath(name string) string {
 	return filepath.Join(f.projectsDir, name, projectRuntimeConfigFilename)
+}
+
+// Get path to the given project's default dotfiles directory.
+func (f *FileStore) GetProjectDotfilesPath(name string) string {
+	return filepath.Join(f.getProjectDir(name), "dotfiles")
 }
 
 // Get the path to where all projects config will be put.

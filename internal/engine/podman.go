@@ -28,7 +28,7 @@ func newPodman(ctx context.Context) (*PodmanEngine, error) {
 	return &PodmanEngine{}, nil
 }
 
-func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntry, relativeDotfilesDir string) error {
+func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntry) error {
 	buildCfg, err := loadBuildConfig(project)
 	if err != nil {
 		return err
@@ -50,7 +50,6 @@ func (c *PodmanEngine) BuildImage(ctx context.Context, project files.ProjectEntr
 		// element, and directive names are validated earlier at parsing time
 		cmdArgs = append(cmdArgs, "--build-arg", fmt.Sprintf("%s=%s", key, buildCfg.Args[key]))
 	}
-	cmdArgs = append(cmdArgs, "--build-arg", "DOTFILES_DIR="+relativeDotfilesDir)
 	cmdArgs = append(cmdArgs, projectBaseDataDir(project))
 
 	cmd := exec.CommandContext(ctx, "podman", cmdArgs...)
@@ -99,6 +98,19 @@ func (c *PodmanEngine) RunContainer(ctx context.Context, project files.ProjectEn
 		"--volume", "paulenv-shared-cache:/home/"+username+"/.container-cache",
 		"--volume", projectLocalVolumeName(project.ProjectName)+":/home/"+username+"/.container-local",
 	)
+	if runtimeCfg.DotfilesPath != "" {
+		dotfilesPath, err := resolveRuntimePath(project.RuntimeConfigPath, runtimeCfg.DotfilesPath)
+		if err != nil {
+			return fmt.Errorf("resolve DOTFILES_PATH: %w", err)
+		}
+		cmdArgs = append(cmdArgs, "--volume", dotfilesPath+":/paul-env/dotfiles:ro")
+	}
+	if runtimeCfg.GitName != "" {
+		cmdArgs = append(cmdArgs, "--env", "GIT_AUTHOR_NAME="+runtimeCfg.GitName)
+	}
+	if runtimeCfg.GitEmail != "" {
+		cmdArgs = append(cmdArgs, "--env", "GIT_AUTHOR_EMAIL="+runtimeCfg.GitEmail)
+	}
 
 	for _, volume := range runtimeCfg.Volumes {
 		cmdArgs = append(cmdArgs, "--volume", volume)

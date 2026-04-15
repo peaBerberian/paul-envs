@@ -422,7 +422,10 @@ jobs:
           grep '^USERNAME kitchen$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
           grep '^USER_SHELL fish$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
           grep '^INSTALL_MISE true$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
-          grep '^GIT_AUTHOR_NAME Kitchen Sink$' "$PROJECTS_PATH"/test-kitchen-sink/build.conf
+          grep '^GIT_AUTHOR_NAME Kitchen Sink$' "$PROJECTS_PATH"/test-kitchen-sink/run.conf
+          grep '^GIT_AUTHOR_EMAIL sink@kitchen.com$' "$PROJECTS_PATH"/test-kitchen-sink/run.conf
+          grep '^DOTFILES_PATH dotfiles$' "$PROJECTS_PATH"/test-kitchen-sink/run.conf
+          test -d "$PROJECTS_PATH"/test-kitchen-sink/dotfiles
   unit-tests:
     name: Unit tests - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}

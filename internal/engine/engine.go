@@ -20,10 +20,8 @@ import (
 type ContainerEngine interface {
 	// Return information on the current chosen "container engine" (its name, its version...)
 	Info(ctx context.Context) (EngineInfo, error)
-	// Build the image associated to the given project, also copying the given
-	// `relDotfilesDir` in the container's $HOME. `relDotfilesDir` must be a relative path
-	// from paul-envs' Dockerfile and reachable from its context.
-	BuildImage(ctx context.Context, project files.ProjectEntry, relDotfilesDir string) error
+	// Build the image associated to the given project.
+	BuildImage(ctx context.Context, project files.ProjectEntry) error
 	// Run the container whose image has previously been built with `BuildImage`.
 	//
 	// If `args` is empty, will start an interactive tty session with the project's shell of

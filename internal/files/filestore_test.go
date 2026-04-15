@@ -107,3 +107,17 @@ func TestFileStore_GetProjectRuntimeConfigPath(t *testing.T) {
 		t.Errorf("GetProjectRuntimeConfigPath() = %v, want %v", got, expected)
 	}
 }
+
+func TestFileStore_GetProjectDotfilesPath(t *testing.T) {
+	store := &FileStore{
+		baseDataDir:   "/test/base",
+		baseConfigDir: "/test/config",
+		projectsDir:   "/test/base/projects",
+	}
+
+	got := store.GetProjectDotfilesPath("myproject")
+	expected := "/test/base/projects/myproject/dotfiles"
+	if got != expected {
+		t.Errorf("GetProjectDotfilesPath() = %v, want %v", got, expected)
+	}
+}

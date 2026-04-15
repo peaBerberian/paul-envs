@@ -56,10 +56,7 @@ var versionBuildDirectives = map[string]struct{}{
 // allBuildDirectives is the union of all recognised directive names.
 var allBuildDirectives = func() map[string]struct{} {
 	m := map[string]struct{}{
-		"GIT_AUTHOR_NAME":        {},
-		"GIT_AUTHOR_EMAIL":       {},
 		"SUPPLEMENTARY_PACKAGES": {},
-		"DOTFILES_DIR":           {},
 	}
 	for k := range requiredBuildDirectives {
 		m[k] = struct{}{}
