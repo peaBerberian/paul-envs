@@ -171,6 +171,12 @@ file containing your container's configuration in your application data
 directory (advertised after the command succeeds). It doesn't build anything
 yet.
 
+If a global dotfiles template exists at
+`$XDG_CONFIG_HOME/paul-envs/dotfiles` (or the platform-equivalent config
+directory), interactive `create` will also ask whether the new project's
+`dotfiles/` directory should be initialized from it. In non-interactive mode,
+you can request that explicitly with `--seed-dotfiles`.
+
 ### 2. Build the container
 
 The previous step created a `build.conf` file for build-time configuration and
@@ -233,6 +239,17 @@ paul-envs clean
 
 Each generated project now gets its own `dotfiles/` directory next to
 `build.conf` and `run.conf`.
+
+If you keep a reusable global template at
+`$XDG_CONFIG_HOME/paul-envs/dotfiles`, `paul-envs create` can copy it into the
+new project's `dotfiles/` directory:
+
+```sh
+paul-envs create ~/projects/myapp --no-prompt --seed-dotfiles
+```
+
+In interactive mode, that choice is proposed automatically when the global
+template directory exists and is non-empty.
 
 That path is referenced from `run.conf` through `DOTFILES_PATH`, which defaults
 to the project-local `dotfiles/` directory. On container start, paul-envs mounts

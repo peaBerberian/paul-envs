@@ -33,7 +33,10 @@ Usage:
 Options for create (all optional):
   --no-prompt              Non-interactive mode (uses defaults)
   --seed-dotfiles          Seed the project dotfiles/ directory from
-                           $XDG_CONFIG_HOME/paul-envs/dotfiles when available
+                           $XDG_CONFIG_HOME/paul-envs/dotfiles
+                           In interactive mode, paul-envs will ask about this
+                           automatically if that global template exists and is
+                           non-empty
   --name NAME              Name of this project (default: directory name)
   --uid UID                Container UID (default: current user - or 1000 on windows)
   --gid GID                Container GID (default: current group - or 1000 on windows)
@@ -107,6 +110,11 @@ Creating a configuration in interactive Mode (default):
 
 Creating a configuration in a non-Interactive Mode:
   paul-envs create ~/projects/myapp --no-prompt --shell bash --nodejs latest
+
+Creating a configuration from a global dotfiles template:
+  paul-envs create ~/projects/myapp --no-prompt --seed-dotfiles
+  # Copies from $XDG_CONFIG_HOME/paul-envs/dotfiles into the new project's
+  # dotfiles/ directory
 
 Mixed Mode (some flags + prompts):
   paul-envs create ~/projects/myapp --nodejs 20.10.0 --rust latest --no-mise
