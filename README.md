@@ -79,6 +79,12 @@ environment.
 It can be seen as a "convenience layer" on top of direct container engine
 commands.
 
+**vs. bubblewrap:**
+`bubblewrap` is more low-level: it is great to isolate one command with specific
+mounts and restrictions. `paul-envs` is more opinionated, but it manages a whole
+per-project development environment with image builds, runtime config, installed
+tools and persistent caches.
+
 **vs. nix-shell / direnv:**
 These manipulate your environment (PATH, env vars) but don't provide container
 isolation (same issue than with `devbox`).
