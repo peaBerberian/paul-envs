@@ -14,13 +14,9 @@ itself can take place inside the container._
 `paul-envs` is both a wrapper over container-engine `build` / `run` workflows
 (`docker` or `podman`) and a configuration generator for them.
 
-There are two separate goals for this tool:
-
-- to allow for a clean ephemeral environment to dev on various projects directly in the
-  container without fearing about poor platform compatibility or environment pollution
-
-- to let LLM agents and other tools iterate inside those while letting you more control
-  on what they can do and what they can see.
+The goal is to allow for a clean ephemeral environment to dev on various projects
+directly in the container without fearing about poor platform compatibility or
+environment pollution
 
 Each of the created containers is similar in a way to [dev
 containers](https://containers.dev/) in that they are targeted for development
