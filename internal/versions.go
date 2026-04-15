@@ -25,23 +25,24 @@ var Version = utils.Version{
 //     Redirect in Dockerfile `.claude` and `.codex` to XDG_DATA_HOME for persistence
 //   - 1.5.0: Set envs (XDG_* etc.) in global shellrc confs, so it's available in login shells
 //   - 2.0.0: Replace per-project compose/env files with build.conf/run.conf
+//   - 2.1.0: Move dotfiles sync, git identity, and managed shell overrides to container start
 var DockerfileVersion = utils.Version{
 	Major: 2,
-	Minor: 0,
+	Minor: 1,
 	Patch: 0,
 }
 
 // Format of generated build.conf files.
 var BuildConfigVersion = utils.Version{
 	Major: 1,
-	Minor: 0,
+	Minor: 1,
 	Patch: 0,
 }
 
 // Format of generated run.conf files.
 var RuntimeConfigVersion = utils.Version{
 	Major: 1,
-	Minor: 0,
+	Minor: 1,
 	Patch: 0,
 }
 

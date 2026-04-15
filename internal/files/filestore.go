@@ -136,49 +136,6 @@ func (f *FileStore) GetAllProjects() ([]ProjectEntry, error) {
 	return entries, nil
 }
 
-// Ensure the "dotfiles" directory in paul-envs' config directory is created and
-// return its path so you can advertise it to the user.
-func (f *FileStore) InitGlobalDotfilesDir() (string, error) {
-	dotfilesDir := filepath.Join(f.baseConfigDir, "dotfiles")
-	if err := f.userFS.MkdirAsUser(dotfilesDir, 0755); err != nil {
-		return "", fmt.Errorf("create base config directory: %w", err)
-	}
-	return dotfilesDir, nil
-}
-
-// Copy the content of the "dotfiles" directory of paul-envs to the given
-// `destDir` path.
-//
-// Returns the relative path (from the Dockerfile base) of the created
-// project-specific dotfiles dir (should be removed) when finished, or an error
-// if it failed.
-func (f *FileStore) CreateProjectDotfilesDir(ctx context.Context, projectName string) (string, error) {
-	if !f.DoesProjectExist(projectName) {
-		return "", fmt.Errorf("cannot copy dotfiles for project '%s': this project does not exist", projectName)
-	}
-	destDir := filepath.Join(f.getProjectInternalDir(projectName), "nextdotfiles")
-	if err := os.RemoveAll(destDir); err != nil {
-		return "", fmt.Errorf("cannot copy dotfiles because %s cannot be removed: %w", destDir, err)
-	}
-	dotfilesDir, err := f.InitGlobalDotfilesDir()
-	if err != nil {
-		return "", err
-	}
-	if err := f.userFS.CopyDirAsUser(ctx, dotfilesDir, destDir); err != nil {
-		return "", fmt.Errorf("cannot copy dotfiles to '%s': %w", destDir, err)
-	}
-	relativeDotfilesDir, err := filepath.Rel(f.baseDataDir, destDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to construct dotfiles relative path: %w", err)
-	}
-
-	return relativeDotfilesDir, nil
-}
-func (f *FileStore) RemoveProjectDotfilesDir(projectName string) error {
-	expectedDir := filepath.Join(f.getProjectInternalDir(projectName), "nextdotfiles")
-	return os.RemoveAll(expectedDir)
-}
-
 // Get path to the given project's build config file.
 // TODO: make private
 func (f *FileStore) GetProjectBuildConfigPath(name string) string {
@@ -189,6 +146,44 @@ func (f *FileStore) GetProjectBuildConfigPath(name string) string {
 // TODO: make private
 func (f *FileStore) GetProjectRuntimeConfigPath(name string) string {
 	return filepath.Join(f.projectsDir, name, projectRuntimeConfigFilename)
+}
+
+// Get path to the given project's default dotfiles directory.
+func (f *FileStore) GetProjectDotfilesPath(name string) string {
+	return filepath.Join(f.getProjectDir(name), "dotfiles")
+}
+
+// Get path to the optional global dotfiles template directory.
+func (f *FileStore) GetGlobalDotfilesPath() string {
+	return filepath.Join(f.baseConfigDir, "dotfiles")
+}
+
+// Returns true if the global dotfiles template directory exists and is non-empty.
+func (f *FileStore) HasGlobalDotfilesTemplate() (bool, error) {
+	dotfilesDir := f.GetGlobalDotfilesPath()
+	entries, err := os.ReadDir(dotfilesDir)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("read global dotfiles template: %w", err)
+	}
+	return len(entries) > 0, nil
+}
+
+// Copy the global dotfiles template into the project's dotfiles directory.
+func (f *FileStore) SeedProjectDotfiles(ctx context.Context, projectName string) error {
+	if !f.DoesProjectExist(projectName) {
+		return fmt.Errorf("cannot seed dotfiles for project '%s': this project does not exist", projectName)
+	}
+	hasTemplate, err := f.HasGlobalDotfilesTemplate()
+	if err != nil {
+		return err
+	}
+	if !hasTemplate {
+		return fmt.Errorf("global dotfiles template not found or empty at %s", f.GetGlobalDotfilesPath())
+	}
+	return f.userFS.CopyDirAsUser(ctx, f.GetGlobalDotfilesPath(), f.GetProjectDotfilesPath(projectName))
 }
 
 // Get the path to where all projects config will be put.

@@ -110,6 +110,7 @@ type Config struct {
 	ProjectHostPath string
 	ProjectDestPath string
 	SshKeyPath      string
+	SeedDotfiles    bool
 }
 
 // New creates a config with UID/GID auto-detected.

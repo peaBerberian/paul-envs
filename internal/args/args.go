@@ -47,10 +47,26 @@ func ParseAndPrompt(args []string, cons *console.Console, filestor *files.FileSt
 		return config.Config{}, err
 	}
 
+	if parsed.seedDotfiles {
+		hasTemplate, err := filestor.HasGlobalDotfilesTemplate()
+		if err != nil {
+			return config.Config{}, err
+		}
+		if !hasTemplate {
+			return config.Config{}, fmt.Errorf("cannot seed dotfiles: global template not found or empty at %s", filestor.GetGlobalDotfilesPath())
+		}
+		cfg.SeedDotfiles = true
+	}
+
 	// Prompt for missing values if interactive
 	if !noPrompt {
 		if err := promptMissing(cons, &cfg); err != nil {
 			return config.Config{}, err
+		}
+		if !cfg.SeedDotfiles {
+			if err := promptDotfilesSeed(cons, filestor, &cfg); err != nil {
+				return config.Config{}, err
+			}
 		}
 	} else if err := validateNoPromptConfig(&cfg); err != nil {
 		return config.Config{}, err
@@ -67,6 +83,7 @@ func ParseAndPrompt(args []string, cons *console.Console, filestor *files.FileSt
 // parsedFlags holds raw flag values
 type parsedFlags struct {
 	noPrompt          bool
+	seedDotfiles      bool
 	name              string
 	uid               string
 	gid               string
@@ -104,6 +121,7 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 
 	flagset := flag.NewFlagSet("create", flag.ContinueOnError)
 	flagset.BoolVar(&noPrompt, "no-prompt", false, "Non-interactive mode")
+	flagset.BoolVar(&p.seedDotfiles, "seed-dotfiles", false, "Seed the project dotfiles directory from the global template")
 	flagset.StringVar(&p.name, "name", "", "Project name")
 	flagset.StringVar(&p.uid, "uid", "", "Container UID")
 	flagset.StringVar(&p.gid, "gid", "", "Container GID")
@@ -506,6 +524,27 @@ func validateNoPromptConfig(cfg *config.Config) error {
 		needsExactVersion(cfg.InstallGo) {
 		return errors.New("exact language versions require Mise; remove --no-mise or use 'latest'/'none'")
 	}
+	return nil
+}
+
+func promptDotfilesSeed(cons *console.Console, filestor *files.FileStore, cfg *config.Config) error {
+	hasTemplate, err := filestor.HasGlobalDotfilesTemplate()
+	if err != nil {
+		return err
+	}
+	if !hasTemplate {
+		return nil
+	}
+
+	cons.WriteLn("")
+	choice, err := cons.AskYesNo(
+		fmt.Sprintf("A global dotfiles template was found at %s.\nSeed this project's dotfiles/ directory from it?", filestor.GetGlobalDotfilesPath()),
+		true,
+	)
+	if err != nil {
+		return fmt.Errorf("unable to prompt for dotfiles template seeding: %w", err)
+	}
+	cfg.SeedDotfiles = choice
 	return nil
 }
 

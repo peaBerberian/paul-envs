@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- `dotfiles` is now in a project-specific directory alongside `build.conf` and `run.conf`
+- `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL` are now part of `run.conf`, and do not necessitate a re-build when updated
+
+### Features
+
+- dotfiles now only apply at `run`-time. Updating dotfiles does not lead to a re-build
+- Add `DOTFILES_PATH` to `run.conf` to let user configure where dotfiles are
+- base "dotfiles" can be seeded from e.g. `XDG_CONFIG_HOME/paul-envs/dotfiles`
+
+### Bug fixes
+
+- Restore explicit language version configuration in the TUI
+
 ## v0.7.0 (2026-04-14)
 
 ### Changes

@@ -36,14 +36,6 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 		return fmt.Errorf("cannot build: Failed to refresh base build files: %w", err)
 	}
 
-	console.Info("Preparing dotfiles...")
-	tmpDotfilesDir, err := filestore.CreateProjectDotfilesDir(ctx, name)
-	if err != nil {
-		filestore.RemoveProjectDotfilesDir(name)
-		return fmt.Errorf("failed to prepare dotfiles for the container: %w", err)
-	}
-	defer filestore.RemoveProjectDotfilesDir(name)
-
 	console.Info("Ensuring that the shared cache volume is created...")
 	if err := ensureSharedCacheVolumeIsCreated(ctx, containerEngine); err != nil {
 		return err
@@ -54,7 +46,7 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 	if err != nil {
 		return fmt.Errorf("failed to obtain information on project '%s': %w", name, err)
 	}
-	if err := containerEngine.BuildImage(ctx, project, tmpDotfilesDir); err != nil {
+	if err := containerEngine.BuildImage(ctx, project); err != nil {
 		return err
 	}
 	engineInfo, err := containerEngine.Info(ctx)

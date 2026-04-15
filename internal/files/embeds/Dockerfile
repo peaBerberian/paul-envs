@@ -1,19 +1,17 @@
-# Dockerfile - Version: 1.5.0
+# Dockerfile - Version: 2.1.0
 # ===========================
 #
 # This "Dockerfile" sets a basic Ubuntu LTS environment with a shell, the wanted
 # node.js version and some CLI tools installed and configured depending on your
 # environment variables.
 #
-# It also copies files you put in the `./configs/` directory inside that
-# container's `$HOME`.
-#
 # It sets most cache directories (e.g. `yarn`, `npm` caches) to a new
 # `$HOME/.container-cache` directory and tools' user data (e.g. shell history
 # neovim plugins, tools database etc.) to a `$HOME/.container-local` directory.
 # It does both to simplify the possibility of persisting those two, but it
 # doesn't persist them by itself (this is configured in each project's
-# runtime configuration).
+# runtime configuration). Dotfiles and shell integration are also managed at
+# container start from the runtime configuration.
 
 FROM ubuntu:24.04 AS ubuntu-base
 
@@ -91,43 +89,11 @@ ARG INSTALL_PYTHON=none
 ARG INSTALL_GO=none
 ARG ENABLE_WASM=false
 ARG ENABLE_SUDO=false
-ARG GIT_AUTHOR_NAME=""
-ARG GIT_AUTHOR_EMAIL=""
-ARG DOTFILES_DIR="./placeholder"
 
 # Set all the right envs to the persisted storages just to be sure
 ENV _ZO_DATA_DIR=/home/${USERNAME}/.container-local/zoxide \
     STARSHIP_CACHE=/home/${USERNAME}/.container-local/starship \
     ATUIN_DB_PATH=/home/${USERNAME}/.container-local/atuin/history.db
-
-# Write shell files that will ensure a sane initial state in the container, with the right
-# envs (ENV instructions are not sufficient as we may run a login shell).
-RUN printf "export XDG_CACHE_HOME=%s\nexport XDG_STATE_HOME=%s\nexport XDG_DATA_HOME=%s\nexport _ZO_DATA_DIR=%s\nexport STARSHIP_CACHE=%s\nexport ATUIN_DB_PATH=%s\n" \
-    "${XDG_CACHE_HOME}" "${XDG_STATE_HOME}" "${XDG_DATA_HOME}" "${_ZO_DATA_DIR}" "${STARSHIP_CACHE}" "${ATUIN_DB_PATH}" \
-    | tee /home/${USERNAME}/.container-overrides.bash \
-          /home/${USERNAME}/.container-overrides.zsh > /dev/null && \
-    echo "export HISTFILE=/home/${USERNAME}/.container-local/.bash_history" >> /home/${USERNAME}/.container-overrides.bash && \
-    echo "export HISTFILE=/home/${USERNAME}/.container-local/.zsh_history" >> /home/${USERNAME}/.container-overrides.zsh && \
-    if [ "$INSTALL_MISE" = "true" ]; then \
-      printf "export PATH=\"/home/${USERNAME}/.container-local/data/mise/shims:\$PATH\"\n" >> /home/${USERNAME}/.container-overrides.bash && \
-      printf "export PATH=\"/home/${USERNAME}/.container-local/data/mise/shims:\$PATH\"\n" >> /home/${USERNAME}/.container-overrides.zsh; \
-    fi && \
-    printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" >> /home/${USERNAME}/.bashrc && \
-    if [ "$USER_SHELL" = "zsh" ]; then \
-      printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" >> /home/${USERNAME}/.zshrc; \
-    fi
-
-RUN printf "set -gx XDG_CACHE_HOME %s\nset -gx XDG_STATE_HOME %s\nset -gx XDG_DATA_HOME %s\nset -gx _ZO_DATA_DIR %s\nset -gx STARSHIP_CACHE %s\nset -gx ATUIN_DB_PATH %s\n" \
-    "${XDG_CACHE_HOME}" "${XDG_STATE_HOME}" "${XDG_DATA_HOME}" "${_ZO_DATA_DIR}" "${STARSHIP_CACHE}" "${ATUIN_DB_PATH}" \
-    > /home/${USERNAME}/.container-overrides.fish && \
-    if [ "$INSTALL_MISE" = "true" ]; then \
-      printf "set -gx PATH /home/${USERNAME}/.container-local/data/mise/shims \$PATH\n" >> /home/${USERNAME}/.container-overrides.fish; \
-    fi && \
-    if [ "$USER_SHELL" = "fish" ]; then \
-      mkdir -p /home/${USERNAME}/.config/fish && \
-      printf "\n# Container overrides\nif test -f ~/.container-overrides.fish\n    source ~/.container-overrides.fish\nend\n" \
-        >> /home/${USERNAME}/.config/fish/config.fish; \
-    fi
 
 USER root
 
@@ -257,12 +223,7 @@ USER ${USERNAME}
 # Install opencode (optional)
 RUN if [ "$INSTALL_OPEN_CODE" = "true" ]; then \
     curl -fsSL https://opencode.ai/install | bash; \
-    printf "\nexport PATH=\"\$HOME/.opencode/bin:\$PATH\"\n" >> /home/${USERNAME}/.bashrc && \
-    if [ "$USER_SHELL" = "fish" ]; then \
-      printf "\nset -gx PATH \$HOME/.opencode/bin \$PATH\n" >> /home/${USERNAME}/.config/fish/config.fish; \
-    elif [ "$USER_SHELL" = "zsh" ]; then \
-      printf "\nexport PATH=\"\$HOME/.opencode/bin:\$PATH\"\n" >> /home/${USERNAME}/.zshrc; \
-    fi; \
+    true; \
   fi
 
 # Install Claude Code (optional)
@@ -293,58 +254,13 @@ RUN if [ "$INSTALL_CODEX" = "true" ]; then \
     rm /tmp/codex.tar.gz; \
   fi
 
-# Add tool initialization lines BEFORE copying user configs
-# This ensures they're present if user doesn't provide custom configs
-
-# Configure `starship` (optional)
-RUN if [ "$INSTALL_STARSHIP" = "true" ]; then \
-    printf '\n# Initialize starship prompt\neval "$(starship init bash)"\n' >> /home/${USERNAME}/.bashrc && \
-    if [ "$USER_SHELL" = "zsh" ]; then \
-      printf '\n# Initialize starship prompt\neval "$(starship init zsh)"\n' >> /home/${USERNAME}/.zshrc; \
-    elif [ "$USER_SHELL" = "fish" ]; then \
-      printf '\n# Initialize starship prompt\nstarship init fish | source\n' >> /home/${USERNAME}/.config/fish/config.fish; \
-    fi; \
-  fi
-
-# Configure `Oh My Posh` (optional)
-RUN if [ "$INSTALL_OH_MY_POSH" = "true" ]; then \
-    printf '\n# Initialize oh-my-posh prompt\neval "$(oh-my-posh init bash)"\n' >> /home/${USERNAME}/.bashrc && \
-    if [ "$USER_SHELL" = "zsh" ]; then \
-      printf '\n# Initialize oh-my-posh prompt\neval "$(oh-my-posh init zsh)"\n' >> /home/${USERNAME}/.zshrc; \
-    elif [ "$USER_SHELL" = "fish" ]; then \
-      printf '\n# Initialize oh-my-posh prompt\noh-my-posh init fish | source\n' >> /home/${USERNAME}/.config/fish/config.fish; \
-    fi; \
-  fi
-
-# Install `atuin` (optional)
 RUN if [ "$INSTALL_ATUIN" = "true" ]; then \
-    curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh | bash && \
-    printf "\n# Initialize atuin\neval \"\$(atuin init bash)\"\n" >> /home/${USERNAME}/.bashrc && \
-    if [ "$USER_SHELL" = "zsh" ]; then \
-      printf "\n# Initialize atuin\neval \"\$(atuin init zsh)\"\n" >> /home/${USERNAME}/.zshrc; \
-    elif [ "$USER_SHELL" = "fish" ]; then \
-      printf "\n# Initialize atuin prompt\natuin init fish | source\n" >> /home/${USERNAME}/.config/fish/config.fish; \
-    fi; \
-    if [ "$USER_SHELL" != "zsh" ]; then \
-      # atuin weirdly seems to create a default `.zshrc` with its setup inside.
-      # We don't need this as a tool could think that zsh is relied on or want to update
-      # that file if it exists, complexifying things for nothing.
-      rm -f /home/${USERNAME}/.zshrc; \
-    fi; \
+    curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh | bash; \
   fi
 
 # Install `mise` + languages (optional)
 RUN if [ "$INSTALL_MISE" = "true" ]; then \
     curl https://mise.jdx.dev/install.sh | sh && \
-    printf "\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n" >> /home/${USERNAME}/.bashrc && \
-    printf "\n# Initialize mise\neval \"\$(mise activate bash)\"\n" >> /home/${USERNAME}/.bashrc && \
-    if [ "$USER_SHELL" = "fish" ]; then \
-      printf "\nset -gx PATH \$HOME/.local/bin \$PATH\n" >> /home/${USERNAME}/.config/fish/config.fish; \
-      printf "\n# Initialize mise\nmise activate fish | source\n" >> /home/${USERNAME}/.config/fish/config.fish; \
-    elif [ "$USER_SHELL" = "zsh" ]; then \
-      printf "\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n" >> /home/${USERNAME}/.zshrc; \
-      printf "\n# Initialize mise\neval \"\$(mise activate zsh)\"\n" >> /home/${USERNAME}/.zshrc; \
-    fi; \
     export PATH="/home/${USERNAME}/.local/bin:$PATH"; \
     if [ -n "$INSTALL_NODE" ] && [ "$INSTALL_NODE" != "none" ]; then \
       mise install node@${INSTALL_NODE} && mise use -g node@${INSTALL_NODE}; \
@@ -431,110 +347,15 @@ RUN if [ -n "$INSTALL_NODE" ] && [ "$INSTALL_NODE" != "none" ]; then \
           mise exec -- rustup target add wasm32-unknown-unknown; \
         fi; \
       fi; \
-      echo '. $HOME/.cargo/env' >> /home/${USERNAME}/.bashrc; \
-      if [ "$USER_SHELL" = "zsh" ]; then \
-        echo '. $HOME/.cargo/env' >> /home/${USERNAME}/.zshrc; \
-      elif [ "$USER_SHELL" = "fish" ]; then \
-        echo 'set -gx PATH $HOME/.cargo/bin $PATH' >> /home/${USERNAME}/.config/fish/config.fish; \
-      fi; \
     fi; \
     if [ -n "$INSTALL_PYTHON" ] && [ "$INSTALL_PYTHON" != "none" ]; then \
       mkdir -p /home/${USERNAME}/.container-cache/pip; \
-      echo 'export PIP_CACHE_DIR="$HOME/.container-cache/pip"' >> /home/${USERNAME}/.bashrc; \
-      if [ "$USER_SHELL" = "zsh" ]; then \
-        echo 'export PIP_CACHE_DIR="$HOME/.container-cache/pip"' >> /home/${USERNAME}/.zshrc; \
-      elif [ "$USER_SHELL" = "fish" ]; then \
-        echo 'set -gx PIP_CACHE_DIR $HOME/.container-cache/pip' >> /home/${USERNAME}/.config/fish/config.fish; \
-      fi; \
     fi; \
     if [ -n "$INSTALL_GO" ] && [ "$INSTALL_GO" != "none" ]; then \
       # Set up Go paths for persistence
       mkdir -p /home/${USERNAME}/.container-local/gopath /home/${USERNAME}/.container-cache/go/mod; \
-      echo 'export GOPATH="$HOME/.container-local/gopath"' >> /home/${USERNAME}/.bashrc; \
-      echo 'export GOMODCACHE="$HOME/.container-cache/go/mod"' >> /home/${USERNAME}/.bashrc; \
-      echo 'export PATH="$GOPATH/bin:$PATH"' >> /home/${USERNAME}/.bashrc; \
-      if [ "$USER_SHELL" = "zsh" ]; then \
-          echo 'export GOPATH="$HOME/.container-local/gopath"' >> /home/${USERNAME}/.zshrc; \
-          echo 'export GOMODCACHE="$HOME/.container-cache/go/mod"' >> /home/${USERNAME}/.zshrc; \
-          echo 'export PATH="$GOPATH/bin:$PATH"' >> /home/${USERNAME}/.zshrc; \
-      elif [ "$USER_SHELL" = "fish" ]; then \
-          echo 'set -gx GOPATH $HOME/.container-local/gopath' >> /home/${USERNAME}/.config/fish/config.fish; \
-          echo 'set -gx GOMODCACHE $HOME/.container-cache/go/mod' >> /home/${USERNAME}/.config/fish/config.fish; \
-          echo 'set -gx PATH $GOPATH/bin $PATH' >> /home/${USERNAME}/.config/fish/config.fish; \
-      fi; \
     fi
 
-# That one should just be default everywhere
-# Done before file copying to ensure that it can be overwritten
-RUN git config --global merge.conflictstyle zdiff3
-
-# Configure delta as git pager (optional)
-# Done before file copying to ensure that it can be overwritten
-RUN if [ "$INSTALL_DELTA" = "true" ]; then \
-    git config --global core.pager delta && \
-    git config --global interactive.diffFilter "delta --color-only" && \
-    git config --global delta.navigate true && \
-    git config --global merge.conflictstyle diff3 && \
-    git config --global diff.colorMoved default; \
-  fi
-
-# Copy dotfiles (may overwrite shell configs with tool init lines)
-RUN --mount=type=bind,source=${DOTFILES_DIR},target=/tmp/configs \
-  if [ -d /tmp/configs ] && [ "$(ls -A /tmp/configs 2>/dev/null)" ]; then \
-    cp -r /tmp/configs/. /home/${USERNAME}/; \
-  fi
-
-# Ensure HISTFILE override is still sourced after config copy
-# This guarantees history persistence even if user configs were copied
-RUN if [ -f /home/${USERNAME}/.bashrc ] && ! grep -qF '.container-overrides.bash' /home/${USERNAME}/.bashrc; then \
-    printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" >> /home/${USERNAME}/.bashrc; \
-  fi
-
-RUN if [ "$USER_SHELL" = "zsh" ] && [ -f /home/${USERNAME}/.zshrc ] && ! grep -qF '.container-overrides.zsh' /home/${USERNAME}/.zshrc; then \
-    printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" >> /home/${USERNAME}/.zshrc; \
-  fi
-
-RUN if [ "$USER_SHELL" = "fish" ] && \
-       [ -f /home/${USERNAME}/.config/fish/config.fish ] && \
-       ! grep -qF '.container-overrides.fish' /home/${USERNAME}/.config/fish/config.fish; then \
-  printf "\n# Container overrides\nif test -f ~/.container-overrides.fish\n    source ~/.container-overrides.fish\nend\n" \
-    >> /home/${USERNAME}/.config/fish/config.fish; \
-fi
-
-# Ensure overrides are sourced in login shells too
-RUN if ! grep -qF '.container-overrides.bash' /home/${USERNAME}/.bash_profile 2>/dev/null; then \
-      printf "\n# Container overrides\n[ -f ~/.container-overrides.bash ] && source ~/.container-overrides.bash\n" \
-        >> /home/${USERNAME}/.bash_profile; \
-    fi
-
-RUN if [ "$USER_SHELL" = "zsh" ] && ! grep -qF '.container-overrides.zsh' /home/${USERNAME}/.zprofile 2>/dev/null; then \
-      printf "\n# Container overrides\n[ -f ~/.container-overrides.zsh ] && source ~/.container-overrides.zsh\n" \
-        >> /home/${USERNAME}/.zprofile; \
-    fi
-
-# NOTE: No need for fish here because it reuses ~/.config/fish/config.fish in that login shell case
-
-# Pre-install nvim plugins if neovim is installed with `lazy.nvim` and config
-# exists, for convenience
-RUN if [ "$INSTALL_NEOVIM" = "true" ] && [ -d /home/${USERNAME}/.config/nvim ]; then \
-      nvim --headless "+Lazy! sync" +qa || true; \
-  fi
-
-# Set git name/e-mail according to what has been configured
-# **AFTER** the copy to ensure we overwrite what has potentially been copied
-RUN if [ -n "$GIT_AUTHOR_NAME" ]; then \
-      git config --global user.name "$GIT_AUTHOR_NAME"; \
-      if [ "$INSTALL_JUJUTSU" = "true" ]; then \
-          jj config set --user user.name "$GIT_AUTHOR_NAME"; \
-      fi; \
-  fi
-
-RUN if [ -n "$GIT_AUTHOR_EMAIL" ]; then \
-      git config --global user.email "$GIT_AUTHOR_EMAIL"; \
-      if [ "$INSTALL_JUJUTSU" = "true" ]; then \
-          jj config set --user user.email "$GIT_AUTHOR_EMAIL"; \
-      fi; \
-  fi
 
 #############################################
 FROM ubuntu-tools AS ubuntu-projects

@@ -2,7 +2,9 @@ package engine
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/peaberberian/paul-envs/internal/config"
 	"github.com/peaberberian/paul-envs/internal/files"
@@ -46,4 +48,28 @@ func projectLocalVolumeName(projectName string) string {
 
 func projectMountTarget(username, projectName string) string {
 	return fmt.Sprintf("/home/%s/projects/%s", username, projectName)
+}
+
+func resolveRuntimePath(configPath, configuredPath string) (string, error) {
+	if configuredPath == "" {
+		return "", nil
+	}
+	if filepath.IsAbs(configuredPath) {
+		return filepath.Clean(configuredPath), nil
+	}
+	if configuredPath == "~" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("resolve home directory: %w", err)
+		}
+		return home, nil
+	}
+	if strings.HasPrefix(configuredPath, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("resolve home directory: %w", err)
+		}
+		return filepath.Join(home, configuredPath[2:]), nil
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(configPath), configuredPath)), nil
 }

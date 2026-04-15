@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -23,12 +24,12 @@ func Create(argsList []string, filestore *files.FileStore, console *console.Cons
 	if err := generateProjectFiles(&cfg, filestore); err != nil {
 		return err
 	}
-	dotfilesDir, err := filestore.InitGlobalDotfilesDir()
-	if err != nil {
-		return err
+	if cfg.SeedDotfiles {
+		if err := filestore.SeedProjectDotfiles(context.Background(), cfg.ProjectName); err != nil {
+			return fmt.Errorf("failed to seed project dotfiles: %w", err)
+		}
 	}
-
-	printNextSteps(&cfg, dotfilesDir, filestore, console)
+	printNextSteps(&cfg, filestore, console)
 	return nil
 }
 
@@ -65,13 +66,14 @@ func generateProjectFiles(cfg *config.Config, filestore *files.FileStore) error 
 		InstallClaudeCode: strconv.FormatBool(cfg.InstallClaudeCode),
 		InstallCodex:      strconv.FormatBool(cfg.InstallCodex),
 		InstallFirefox:    strconv.FormatBool(cfg.InstallFirefox),
-		GitName:           utils.EscapeEnvValue(cfg.GitName),
-		GitEmail:          utils.EscapeEnvValue(cfg.GitEmail),
 	}
 
 	runtimeData := files.RuntimeTemplateData{
 		Version:         versions.RuntimeConfigVersion.ToString(),
 		ProjectHostPath: utils.EscapeEnvValue(cfg.ProjectHostPath),
+		DotfilesPath:    "dotfiles",
+		GitName:         utils.EscapeEnvValue(cfg.GitName),
+		GitEmail:        utils.EscapeEnvValue(cfg.GitEmail),
 		Volumes:         cfg.Volumes,
 		Ports:           runtimePorts(cfg.Ports),
 	}
@@ -91,7 +93,7 @@ func runtimePorts(ports []uint16) []string {
 	return out
 }
 
-func printNextSteps(cfg *config.Config, dotfilesDir string, filestore *files.FileStore, console *console.Console) {
+func printNextSteps(cfg *config.Config, filestore *files.FileStore, console *console.Console) {
 	console.Success("Created project '%s'", cfg.ProjectName)
 	console.WriteLn("")
 	console.WriteLn("Next steps:")
@@ -99,8 +101,9 @@ func printNextSteps(cfg *config.Config, dotfilesDir string, filestore *files.Fil
 	// TODO: rely on just `GetProject` instead
 	console.WriteLn("     - %s", filestore.GetProjectBuildConfigPath(cfg.ProjectName))
 	console.WriteLn("     - %s", filestore.GetProjectRuntimeConfigPath(cfg.ProjectName))
-	console.WriteLn("  2. Put the $HOME dotfiles you want to port in:")
-	console.WriteLn("     - %s", dotfilesDir)
+	console.WriteLn("  2. Optionally add project-specific dotfiles:")
+	console.WriteLn("     - %s", filestore.GetProjectDotfilesPath(cfg.ProjectName))
+	console.WriteLn("     These are synced when the environment starts, so you can do this now or later.")
 	console.WriteLn("  3. Build the environment:")
 	console.WriteLn("     paul-envs build %s", cfg.ProjectName)
 	console.WriteLn("  4. Run the environment:")

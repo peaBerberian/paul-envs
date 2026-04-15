@@ -237,6 +237,29 @@ jobs:
             --port 3000 \
             --port 5432
 
+      - name: Set config path
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "CONFIG_PATH=$APPDATA/paul-envs" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "CONFIG_PATH=$HOME/Library/Preferences/paul-envs" >> $GITHUB_ENV
+          else
+            echo "CONFIG_PATH=${XDG_CONFIG_HOME:-$HOME/.config}/paul-envs" >> $GITHUB_ENV
+          fi
+
+      - name: Test create with seeded dotfiles
+        shell: bash
+        run: |
+          mkdir -p "$CONFIG_PATH"/dotfiles
+          printf 'seeded-template\n' > "$CONFIG_PATH"/dotfiles/.paul-envs-seeded-template
+
+          ./paul-envs create ./test-project \
+            --no-prompt \
+            --name test-seeded-dotfiles \
+            --shell bash \
+            --seed-dotfiles
+
       - name: Test list (with projects)
         shell: bash
         run: |
@@ -258,6 +281,8 @@ jobs:
         run: |
           test -f "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
           test -f "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
+          test -d "$PROJECTS_PATH"/test-minimal/dotfiles || exit 1
+          test -f "$PROJECTS_PATH"/test-seeded-dotfiles/dotfiles/.paul-envs-seeded-template || exit 1
           test -f "$PROJECTS_PATH"/test-node/build.conf || exit 1
           test -f "$PROJECTS_PATH"/test-multi-lang/build.conf || exit 1
           echo "All project files created successfully"
@@ -277,6 +302,7 @@ jobs:
         run: |
           grep "^VERSION " "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
           grep "^PATH " "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
+          grep "^DOTFILES_PATH dotfiles$" "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
           echo "run.conf structure verified"
 
       - name: Verify ports in run.conf
@@ -681,6 +707,42 @@ jobs:
             echo "ERROR: Expected $EXPECTED_ARCH but got $ACTUAL_ARCH"
             exit 1
           fi
+
+      - name: Prepare runtime dotfiles fixtures
+        shell: bash
+        run: |
+          PROJECTS_PATH="${XDG_DATA_HOME:-$HOME/.local/share}/paul-envs/projects"
+          DEFAULT_DOTFILES_DIR="$PROJECTS_PATH/full-build/dotfiles"
+          ALT_DOTFILES_DIR="$GITHUB_WORKSPACE/alt-dotfiles"
+
+          mkdir -p "$DEFAULT_DOTFILES_DIR"
+          mkdir -p "$ALT_DOTFILES_DIR"
+
+          printf 'default-dotfiles-source\n' > "$DEFAULT_DOTFILES_DIR/.paul-envs-dotfiles-source"
+          printf 'override-dotfiles-source\n' > "$ALT_DOTFILES_DIR/.paul-envs-dotfiles-source"
+
+      - name: Test runtime dotfiles sync
+        shell: bash
+        run: |
+          timeout 30s ./paul-envs run full-build bash -c '
+            test -f ~/.paul-envs-dotfiles-source
+            test "$(cat ~/.paul-envs-dotfiles-source)" = "default-dotfiles-source"
+          '
+
+      - name: Test DOTFILES_PATH override
+        shell: bash
+        run: |
+          PROJECTS_PATH="${XDG_DATA_HOME:-$HOME/.local/share}/paul-envs/projects"
+          RUN_CONF="$PROJECTS_PATH/full-build/run.conf"
+          ALT_DOTFILES_DIR="$GITHUB_WORKSPACE/alt-dotfiles"
+
+          sed -i "s|^DOTFILES_PATH .*|DOTFILES_PATH $ALT_DOTFILES_DIR|" "$RUN_CONF"
+          grep "^DOTFILES_PATH $ALT_DOTFILES_DIR$" "$RUN_CONF"
+
+          timeout 30s ./paul-envs run full-build bash -c '
+            test -f ~/.paul-envs-dotfiles-source
+            test "$(cat ~/.paul-envs-dotfiles-source)" = "override-dotfiles-source"
+          '
 
       - name: Test full build
         shell: bash

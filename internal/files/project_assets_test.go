@@ -48,13 +48,14 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 		InstallClaudeCode: "false",
 		InstallCodex:      "false",
 		InstallFirefox:    "false",
-		GitName:           "Test User",
-		GitEmail:          "test@example.com",
 	}
 
 	runtimeTplData := RuntimeTemplateData{
 		Version:         "1.0.0",
 		ProjectHostPath: "/host/path",
+		DotfilesPath:    "dotfiles",
+		GitName:         "Test User",
+		GitEmail:        "test@example.com",
 		Volumes:         []string{"./vol1:/data1:ro", "./vol2:/data2"},
 		Ports:           []string{"3000:3000", "8080:8080"},
 	}
@@ -76,6 +77,10 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 	if _, err := os.Stat(projectInfoFile); os.IsNotExist(err) {
 		t.Fatal("project.lock file was not created")
 	}
+	dotfilesDir := store.GetProjectDotfilesPath("testproject")
+	if info, err := os.Stat(dotfilesDir); err != nil || !info.IsDir() {
+		t.Fatalf("project dotfiles directory was not created: stat err=%v", err)
+	}
 	if filepath.Dir(projectInfoFile) != store.getProjectInternalDir("testproject") {
 		t.Fatalf("project.lock should be stored in %s, got %s", store.getProjectInternalDir("testproject"), filepath.Dir(projectInfoFile))
 	}
@@ -90,8 +95,6 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 		`USER_SHELL bash`,
 		`INSTALL_NODE latest`,
 		`ENABLE_SSH true`,
-		`GIT_AUTHOR_NAME Test User`,
-		`GIT_AUTHOR_EMAIL test@example.com`,
 		`HOST_UID 1000`,
 	}
 	for _, check := range buildChecks {
@@ -107,6 +110,9 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 	runChecks := []string{
 		`VERSION 1.0.0`,
 		`PATH /host/path`,
+		`DOTFILES_PATH dotfiles`,
+		`GIT_AUTHOR_NAME Test User`,
+		`GIT_AUTHOR_EMAIL test@example.com`,
 		`VOLUME ./vol1:/data1:ro`,
 		`VOLUME ./vol2:/data2`,
 		`PORT 3000:3000`,

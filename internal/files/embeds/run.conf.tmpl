@@ -18,6 +18,15 @@ PATH {{.ProjectHostPath}}
 # Defaults to the automatic project mount target.
 # WORKDIR /home/dev/projects/example
 
+# Optional dotfiles directory on the host to sync into $HOME on container
+# start. Relative paths are resolved from this run.conf directory.
+# The generated default points to the project-local dotfiles/ directory.
+DOTFILES_PATH {{.DotfilesPath}}
+
+# Optional git author identity applied on container start.
+GIT_AUTHOR_NAME {{.GitName}}
+GIT_AUTHOR_EMAIL {{.GitEmail}}
+
 # Optional extra bind mounts. Repeat as needed.
 # The value is forwarded directly to the container engine's --volume flag.
 {{- if .Volumes}}

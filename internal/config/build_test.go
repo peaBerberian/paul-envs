@@ -112,10 +112,7 @@ INSTALL_GO none
 
 func TestLoadBuildConfig_FreeformDirectives(t *testing.T) {
 	content := minimalValidConf +
-		"GIT_AUTHOR_NAME John Doe\n" +
-		"GIT_AUTHOR_EMAIL john@example.com\n" +
-		"SUPPLEMENTARY_PACKAGES curl wget\n" +
-		"DOTFILES_DIR ./dotfiles\n"
+		"SUPPLEMENTARY_PACKAGES curl wget\n"
 
 	path := writeTempConf(t, content)
 	cfg, err := LoadBuildConfig(path)
@@ -124,10 +121,7 @@ func TestLoadBuildConfig_FreeformDirectives(t *testing.T) {
 	}
 
 	cases := []struct{ key, want string }{
-		{"GIT_AUTHOR_NAME", "John Doe"},
-		{"GIT_AUTHOR_EMAIL", "john@example.com"},
 		{"SUPPLEMENTARY_PACKAGES", "curl wget"},
-		{"DOTFILES_DIR", "./dotfiles"},
 	}
 	for _, c := range cases {
 		if got := cfg.Args[c.key]; got != c.want {

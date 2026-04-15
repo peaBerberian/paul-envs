@@ -54,14 +54,15 @@ type BuildTemplateData struct {
 	InstallClaudeCode string
 	InstallCodex      string
 	InstallFirefox    string
-	GitName           string
-	GitEmail          string
 }
 
 // Data needed to construct a project's `run.conf` file.
 type RuntimeTemplateData struct {
 	Version         string
 	ProjectHostPath string
+	DotfilesPath    string
+	GitName         string
+	GitEmail        string
 	Volumes         []string
 	Ports           []string
 }
@@ -182,6 +183,9 @@ func (f *FileStore) CreateProjectFiles(
 	if err := f.userFS.MkdirAsUser(f.getProjectDir(projectName), 0755); err != nil {
 		return fmt.Errorf("create project directory: %w", err)
 	}
+	if err := f.userFS.MkdirAsUser(f.GetProjectDotfilesPath(projectName), 0755); err != nil {
+		return fmt.Errorf("create project dotfiles directory: %w", err)
+	}
 	if err := f.userFS.MkdirAsUser(f.getProjectInternalDir(projectName), 0755); err != nil {
 		return fmt.Errorf("create project internal directory: %w", err)
 	}
@@ -251,10 +255,6 @@ func (f *FileStore) RefreshBaseFiles() error {
 		return err
 	}
 
-	// Now, the placeholder directory
-	if err := f.userFS.MkdirAsUser(filepath.Join(f.baseDataDir, "placeholder"), 0755); err != nil {
-		return fmt.Errorf("create empty dotfiles placeholder: %w", err)
-	}
 	return nil
 }
 
