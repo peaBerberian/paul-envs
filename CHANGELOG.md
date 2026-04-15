@@ -6,12 +6,14 @@
 
 - `dotfiles` is now in a project-specific directory alongside `build.conf` and `run.conf`
 - `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL` are now part of `run.conf`, and do not necessitate a re-build when updated
+- `create` command flags now don't silently disable other unspecified args (e.g. `--neovim` which - as a tool - would imply no other tool) in CLI mode, confirmation is asked instead
 
 ### Features
 
 - dotfiles now only apply at `run`-time. Updating dotfiles does not lead to a re-build
 - Add `DOTFILES_PATH` to `run.conf` to let user configure where dotfiles are
 - base "dotfiles" can be seeded from e.g. `XDG_CONFIG_HOME/paul-envs/dotfiles`
+- `help` flag per-command
 
 ### Bug fixes
 
