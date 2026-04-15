@@ -32,6 +32,8 @@ Usage:
 
 Options for create (all optional):
   --no-prompt              Non-interactive mode (uses defaults)
+  --seed-dotfiles          Seed the project dotfiles/ directory from
+                           $XDG_CONFIG_HOME/paul-envs/dotfiles when available
   --name NAME              Name of this project (default: directory name)
   --uid UID                Container UID (default: current user - or 1000 on windows)
   --gid GID                Container GID (default: current group - or 1000 on windows)

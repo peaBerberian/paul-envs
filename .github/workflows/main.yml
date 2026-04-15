@@ -237,6 +237,29 @@ jobs:
             --port 3000 \
             --port 5432
 
+      - name: Set config path
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "CONFIG_PATH=$APPDATA/paul-envs" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "CONFIG_PATH=$HOME/Library/Preferences/paul-envs" >> $GITHUB_ENV
+          else
+            echo "CONFIG_PATH=${XDG_CONFIG_HOME:-$HOME/.config}/paul-envs" >> $GITHUB_ENV
+          fi
+
+      - name: Test create with seeded dotfiles
+        shell: bash
+        run: |
+          mkdir -p "$CONFIG_PATH"/dotfiles
+          printf 'seeded-template\n' > "$CONFIG_PATH"/dotfiles/.paul-envs-seeded-template
+
+          ./paul-envs create ./test-project \
+            --no-prompt \
+            --name test-seeded-dotfiles \
+            --shell bash \
+            --seed-dotfiles
+
       - name: Test list (with projects)
         shell: bash
         run: |
@@ -259,6 +282,7 @@ jobs:
           test -f "$PROJECTS_PATH"/test-minimal/build.conf || exit 1
           test -f "$PROJECTS_PATH"/test-minimal/run.conf || exit 1
           test -d "$PROJECTS_PATH"/test-minimal/dotfiles || exit 1
+          test -f "$PROJECTS_PATH"/test-seeded-dotfiles/dotfiles/.paul-envs-seeded-template || exit 1
           test -f "$PROJECTS_PATH"/test-node/build.conf || exit 1
           test -f "$PROJECTS_PATH"/test-multi-lang/build.conf || exit 1
           echo "All project files created successfully"

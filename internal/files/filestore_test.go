@@ -1,6 +1,9 @@
 package files
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -119,5 +122,90 @@ func TestFileStore_GetProjectDotfilesPath(t *testing.T) {
 	expected := "/test/base/projects/myproject/dotfiles"
 	if got != expected {
 		t.Errorf("GetProjectDotfilesPath() = %v, want %v", got, expected)
+	}
+}
+
+func TestFileStore_GetGlobalDotfilesPath(t *testing.T) {
+	store := &FileStore{
+		baseDataDir:   "/test/base",
+		baseConfigDir: "/test/config",
+		projectsDir:   "/test/base/projects",
+	}
+
+	got := store.GetGlobalDotfilesPath()
+	expected := "/test/config/dotfiles"
+	if got != expected {
+		t.Errorf("GetGlobalDotfilesPath() = %v, want %v", got, expected)
+	}
+}
+
+func TestFileStore_HasGlobalDotfilesTemplate(t *testing.T) {
+	baseConfigDir := t.TempDir()
+	store := &FileStore{
+		userFS:        &UserFS{homeDir: t.TempDir(), sudoUser: nil},
+		baseDataDir:   t.TempDir(),
+		baseConfigDir: baseConfigDir,
+		projectsDir:   filepath.Join(t.TempDir(), "projects"),
+	}
+
+	hasTemplate, err := store.HasGlobalDotfilesTemplate()
+	if err != nil {
+		t.Fatalf("HasGlobalDotfilesTemplate() error = %v", err)
+	}
+	if hasTemplate {
+		t.Fatal("expected no template when directory is missing")
+	}
+
+	dotfilesDir := store.GetGlobalDotfilesPath()
+	if err := os.MkdirAll(dotfilesDir, 0755); err != nil {
+		t.Fatalf("mkdir global dotfiles: %v", err)
+	}
+	hasTemplate, err = store.HasGlobalDotfilesTemplate()
+	if err != nil {
+		t.Fatalf("HasGlobalDotfilesTemplate() error = %v", err)
+	}
+	if hasTemplate {
+		t.Fatal("expected empty directory to not count as template")
+	}
+
+	if err := os.WriteFile(filepath.Join(dotfilesDir, ".bashrc"), []byte("echo hi\n"), 0644); err != nil {
+		t.Fatalf("write template file: %v", err)
+	}
+	hasTemplate, err = store.HasGlobalDotfilesTemplate()
+	if err != nil {
+		t.Fatalf("HasGlobalDotfilesTemplate() error = %v", err)
+	}
+	if !hasTemplate {
+		t.Fatal("expected non-empty directory to count as template")
+	}
+}
+
+func TestFileStore_SeedProjectDotfiles(t *testing.T) {
+	baseDataDir := t.TempDir()
+	baseConfigDir := t.TempDir()
+	store := &FileStore{
+		userFS:        &UserFS{homeDir: t.TempDir(), sudoUser: nil},
+		baseDataDir:   baseDataDir,
+		baseConfigDir: baseConfigDir,
+		projectsDir:   filepath.Join(baseDataDir, "projects"),
+	}
+
+	projectName := "myproject"
+	if err := os.MkdirAll(store.GetProjectDotfilesPath(projectName), 0755); err != nil {
+		t.Fatalf("mkdir project dotfiles: %v", err)
+	}
+	if err := os.MkdirAll(store.GetGlobalDotfilesPath(), 0755); err != nil {
+		t.Fatalf("mkdir global dotfiles: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(store.GetGlobalDotfilesPath(), ".gitconfig"), []byte("[user]\n"), 0644); err != nil {
+		t.Fatalf("write template file: %v", err)
+	}
+
+	if err := store.SeedProjectDotfiles(context.Background(), projectName); err != nil {
+		t.Fatalf("SeedProjectDotfiles() error = %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(store.GetProjectDotfilesPath(projectName), ".gitconfig")); err != nil {
+		t.Fatalf("expected seeded file to exist: %v", err)
 	}
 }

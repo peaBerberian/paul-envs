@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -22,6 +23,11 @@ func Create(argsList []string, filestore *files.FileStore, console *console.Cons
 
 	if err := generateProjectFiles(&cfg, filestore); err != nil {
 		return err
+	}
+	if cfg.SeedDotfiles {
+		if err := filestore.SeedProjectDotfiles(context.Background(), cfg.ProjectName); err != nil {
+			return fmt.Errorf("failed to seed project dotfiles: %w", err)
+		}
 	}
 	printNextSteps(&cfg, filestore, console)
 	return nil

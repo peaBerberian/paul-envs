@@ -3,6 +3,8 @@ package args
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -80,5 +82,60 @@ func TestParseAndPrompt_NoPromptAllowsLatestWithoutMise(t *testing.T) {
 	}
 	if cfg.InstallNode != "latest" {
 		t.Fatalf("InstallNode = %q, want latest", cfg.InstallNode)
+	}
+}
+
+func TestParseAndPrompt_NoPromptSeedDotfilesRequiresTemplate(t *testing.T) {
+	projectPath := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	store, err := files.NewFileStore()
+	if err != nil {
+		t.Fatalf("NewFileStore() error = %v", err)
+	}
+	cons := console.New(context.Background(), strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+
+	_, err = ParseAndPrompt([]string{
+		projectPath,
+		"--no-prompt",
+		"--name", "test-seed-dotfiles",
+		"--seed-dotfiles",
+	}, cons, store)
+	if err == nil {
+		t.Fatal("expected error when --seed-dotfiles is used without a global template")
+	}
+	if !strings.Contains(err.Error(), "cannot seed dotfiles") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParseAndPrompt_NoPromptSeedDotfilesUsesTemplate(t *testing.T) {
+	projectPath := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	configHome := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	store, err := files.NewFileStore()
+	if err != nil {
+		t.Fatalf("NewFileStore() error = %v", err)
+	}
+	if err := os.MkdirAll(store.GetGlobalDotfilesPath(), 0755); err != nil {
+		t.Fatalf("mkdir template dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(store.GetGlobalDotfilesPath(), ".bashrc"), []byte("echo hi\n"), 0644); err != nil {
+		t.Fatalf("write template file: %v", err)
+	}
+	cons := console.New(context.Background(), strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+
+	cfg, err := ParseAndPrompt([]string{
+		projectPath,
+		"--no-prompt",
+		"--name", "test-seed-dotfiles",
+		"--seed-dotfiles",
+	}, cons, store)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !cfg.SeedDotfiles {
+		t.Fatal("expected SeedDotfiles to be true")
 	}
 }
