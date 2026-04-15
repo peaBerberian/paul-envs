@@ -16,6 +16,11 @@ import (
 )
 
 func Create(argsList []string, filestore *files.FileStore, console *console.Console) error {
+	if len(argsList) > 0 && isHelpArg(argsList[0]) {
+		args.WriteCreateUsage(console)
+		return nil
+	}
+
 	cfg, err := args.ParseAndPrompt(argsList, console, filestore)
 	if err != nil {
 		return err
@@ -91,6 +96,10 @@ func runtimePorts(ports []uint16) []string {
 		out = append(out, fmt.Sprintf("%d:%d", port, port))
 	}
 	return out
+}
+
+func isHelpArg(arg string) bool {
+	return arg == "--help" || arg == "-h"
 }
 
 func printNextSteps(cfg *config.Config, filestore *files.FileStore, console *console.Console) {

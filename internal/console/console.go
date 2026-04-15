@@ -33,6 +33,14 @@ func New(ctx context.Context, rd io.Reader, w io.Writer, ew io.Writer) *Console 
 	}
 }
 
+func (c *Console) Writer() io.Writer {
+	return c.writer
+}
+
+func (c *Console) ErrorWriter() io.Writer {
+	return c.errWriter
+}
+
 func (c *Console) Error(format string, args ...any) {
 	fmt.Fprintf(c.errWriter, // red+
 		format+colorReset+"\n", args...)

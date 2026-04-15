@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/peaberberian/paul-envs/internal/clihelp"
 	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/engine"
 	"github.com/peaberberian/paul-envs/internal/files"
@@ -14,6 +15,7 @@ import (
 func List(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
 	nameOnly := false
 	flagset := flag.NewFlagSet("list", flag.ContinueOnError)
+	flagset.SetOutput(console.Writer())
 	flagset.BoolVar(&nameOnly, "names", false, "Only display names")
 	flagset.Usage = func() {
 		console.WriteLn("Usage: paul-envs list [flags]")
@@ -21,7 +23,7 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 		console.WriteLn("List all projects and their current status.")
 		console.WriteLn("")
 		console.WriteLn("Flags:")
-		flagset.PrintDefaults() // prints -names with its description automatically
+		clihelp.PrintDefaults(console, flagset)
 	}
 	if err := flagset.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {

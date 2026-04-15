@@ -35,41 +35,8 @@ func main() {
 	cmd := os.Args[1]
 	args := os.Args[2:]
 
-	var cmdErr error
-	switch cmd {
-	case "create", "c", "--create", "-c":
-		cmdErr = commands.Create(args, filestore, console)
-	case "list", "ls", "l", "--list", "-l":
-		cmdErr = commands.List(ctx, args, filestore, console)
-	case "build", "b", "--build", "-b":
-		cmdErr = commands.Build(ctx, args, filestore, console)
-	case "run", "e", "--run", "-e":
-		cmdErr = commands.Run(ctx, args, filestore, console)
-	case "remove", "rm", "r", "--remove", "-r":
-		cmdErr = commands.Remove(ctx, args, filestore, console)
-	case "version", "v", "--version", "-v":
-		cmdErr = commands.Version(ctx, console)
-	case "clean", "x", "--clean", "-x":
-		cmdErr = commands.Clean(ctx, filestore, console)
-	case "interactive", "i", "--interactive", "-i":
-		cmdErr = commands.Interactive(ctx, filestore, console)
-	case "help", "h", "--help", "-h":
-		if len(args) > 0 {
-			// Delegate: "paul-envs help list" → "paul-envs list --help"
-			subArgs := append(args[1:], "--help")
-			switch args[0] {
-			case "list", "ls", "l":
-				commands.List(ctx, subArgs, filestore, console)
-			case "build", "b":
-				commands.Build(ctx, subArgs, filestore, console)
-			// ... other subcommands
-			default:
-				console.Error("Unknown command: %s", args[0])
-			}
-		} else {
-			commands.Help(filestore, console)
-		}
-	default:
+	cmdErr := runCommand(ctx, cmd, args, filestore, console)
+	if errors.Is(cmdErr, errUnknownCommand) {
 		console.Error("Error: unknown command: %s", cmd)
 		console.Error("Run with --help to have a list of authorized commands")
 		os.Exit(1)
@@ -82,5 +49,51 @@ func main() {
 		}
 		console.Error("Error: %v", cmdErr)
 		os.Exit(1)
+	}
+}
+
+var errUnknownCommand = errors.New("unknown command")
+
+func runCommand(
+	ctx context.Context,
+	cmd string,
+	args []string,
+	filestore *files.FileStore,
+	console *console.Console,
+) error {
+	switch cmd {
+	case "create", "c", "--create", "-c":
+		return commands.Create(args, filestore, console)
+	case "list", "ls", "l", "--list", "-l":
+		return commands.List(ctx, args, filestore, console)
+	case "build", "b", "--build", "-b":
+		return commands.Build(ctx, args, filestore, console)
+	case "run", "e", "--run", "-e":
+		return commands.Run(ctx, args, filestore, console)
+	case "remove", "rm", "r", "--remove", "-r":
+		return commands.Remove(ctx, args, filestore, console)
+	case "version", "v", "--version", "-v":
+		return commands.Version(ctx, console)
+	case "clean", "x", "--clean", "-x":
+		return commands.Clean(ctx, filestore, console)
+	case "interactive", "i", "--interactive", "-i":
+		return commands.Interactive(ctx, filestore, console)
+	case "help", "h", "--help", "-h":
+		if len(args) == 0 || isHelpCommand(args[0]) {
+			commands.Help(filestore, console)
+			return nil
+		}
+		return runCommand(ctx, args[0], append([]string{"--help"}, args[1:]...), filestore, console)
+	default:
+		return errUnknownCommand
+	}
+}
+
+func isHelpCommand(arg string) bool {
+	switch arg {
+	case "help", "h", "--help", "-h":
+		return true
+	default:
+		return false
 	}
 }

@@ -9,11 +9,23 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/peaberberian/paul-envs/internal/clihelp"
 	"github.com/peaberberian/paul-envs/internal/config"
 	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/files"
 	"github.com/peaberberian/paul-envs/internal/utils"
 )
+
+type stringSliceFlag []string
+
+func (s *stringSliceFlag) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *stringSliceFlag) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
 
 // ParseAndPrompt parses command-line arguments and prompts for missing configuration
 func ParseAndPrompt(args []string, cons *console.Console, filestor *files.FileStore) (config.Config, error) {
@@ -27,7 +39,7 @@ func ParseAndPrompt(args []string, cons *console.Console, filestor *files.FileSt
 		return config.Config{}, fmt.Errorf("invalid project path: %w", err)
 	}
 
-	parsed, noPrompt, err := parseFlags(args[1:])
+	parsed, noPrompt, err := parseFlags(args[1:], cons)
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -115,22 +127,40 @@ type parsedFlags struct {
 	volumes           []string
 }
 
-func parseFlags(args []string) (*parsedFlags, bool, error) {
+func WriteCreateUsage(cons *console.Console) {
+	flagset := newCreateFlagSet(&parsedFlags{}, new(bool), cons)
+	flagset.Usage()
+}
+
+func parseFlags(args []string, cons *console.Console) (*parsedFlags, bool, error) {
 	var noPrompt bool
 	p := &parsedFlags{}
+	flagset := newCreateFlagSet(p, &noPrompt, cons)
 
+	if err := flagset.Parse(args); err != nil {
+		return nil, false, err
+	}
+
+	return p, noPrompt, nil
+}
+
+func newCreateFlagSet(p *parsedFlags, noPrompt *bool, cons *console.Console) *flag.FlagSet {
 	flagset := flag.NewFlagSet("create", flag.ContinueOnError)
-	flagset.BoolVar(&noPrompt, "no-prompt", false, "Non-interactive mode")
+	if cons != nil {
+		flagset.SetOutput(cons.Writer())
+	}
+
+	flagset.BoolVar(noPrompt, "no-prompt", false, "Non-interactive mode")
 	flagset.BoolVar(&p.seedDotfiles, "seed-dotfiles", false, "Seed the project dotfiles directory from the global template")
 	flagset.StringVar(&p.name, "name", "", "Project name")
 	flagset.StringVar(&p.uid, "uid", "", "Container UID")
 	flagset.StringVar(&p.gid, "gid", "", "Container GID")
 	flagset.StringVar(&p.username, "username", "", "Container username")
-	flagset.StringVar(&p.shell, "shell", "", "User shell")
-	flagset.StringVar(&p.nodeVersion, "nodejs", "", "Node.js version")
-	flagset.StringVar(&p.rustVersion, "rust", "", "Rust version")
-	flagset.StringVar(&p.pythonVersion, "python", "", "Python version")
-	flagset.StringVar(&p.goVersion, "go", "", "Go version")
+	flagset.StringVar(&p.shell, "shell", "", "User shell: bash|zsh|fish")
+	flagset.StringVar(&p.nodeVersion, "nodejs", "", "Node.js version: none|latest|X.Y.Z")
+	flagset.StringVar(&p.rustVersion, "rust", "", "Rust version: none|latest|X.Y.Z")
+	flagset.StringVar(&p.pythonVersion, "python", "", "Python version: none|latest|X.Y.Z")
+	flagset.StringVar(&p.goVersion, "go", "", "Go version: none|latest|X.Y.Z")
 	flagset.BoolVar(&p.enableWasm, "enable-wasm", false, "Enable WebAssembly tools")
 	flagset.BoolVar(&p.enableWasm, "wasm", false, "Enable WebAssembly tools")
 	flagset.BoolVar(&p.enableSsh, "enable-ssh", false, "Enable SSH access")
@@ -142,7 +172,7 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installNeovim, "neovim", false, "Install Neovim")
 	flagset.BoolVar(&p.installStarship, "starship", false, "Install Starship")
 	flagset.BoolVar(&p.installOhMyPosh, "oh-my-posh", false, "Install Oh My Posh")
-	flagset.BoolVar(&p.noMise, "no-mise", false, "Install Mise")
+	flagset.BoolVar(&p.noMise, "no-mise", false, "Disable Mise-managed language installation")
 	flagset.BoolVar(&p.installAtuin, "atuin", false, "Install Atuin")
 	flagset.BoolVar(&p.installZellij, "zellij", false, "Install Zellij")
 	flagset.BoolVar(&p.installJujutsu, "jujutsu", false, "Install Jujutsu")
@@ -151,29 +181,28 @@ func parseFlags(args []string) (*parsedFlags, bool, error) {
 	flagset.BoolVar(&p.installClaudeCode, "claude-code", false, "Install Claude Code")
 	flagset.BoolVar(&p.installCodex, "codex", false, "Install codex")
 	flagset.BoolVar(&p.installFirefox, "firefox", false, "Install Mozilla Firefox")
+	flagset.Var((*stringSliceFlag)(&p.packages), "package", "Additional Ubuntu package (repeatable)")
+	flagset.Var((*stringSliceFlag)(&p.ports), "port", "Expose container port (repeatable)")
+	flagset.Var((*stringSliceFlag)(&p.volumes), "volume", "Mount volume as HOST:CONT[:ro] (repeatable)")
 
-	// Parse repeatable flags manually
-	filtered := make([]string, 0, len(args))
-	for i := 0; i < len(args); i++ {
-		if args[i] == "--port" && i+1 < len(args) {
-			p.ports = append(p.ports, args[i+1])
-			i++
-		} else if args[i] == "--volume" && i+1 < len(args) {
-			p.volumes = append(p.volumes, args[i+1])
-			i++
-		} else if args[i] == "--package" && i+1 < len(args) {
-			p.packages = append(p.packages, args[i+1])
-			i++
-		} else {
-			filtered = append(filtered, args[i])
+	flagset.Usage = func() {
+		if cons == nil {
+			flagset.PrintDefaults()
+			return
 		}
+		cons.WriteLn("Usage: paul-envs create <path> [flags]")
+		cons.WriteLn("")
+		cons.WriteLn("Create a project configuration for a development container.")
+		cons.WriteLn("")
+		cons.WriteLn("Examples:")
+		cons.WriteLn("  paul-envs create ~/projects/myapp")
+		cons.WriteLn("  paul-envs create ~/projects/myapp --no-prompt --shell bash --nodejs latest")
+		cons.WriteLn("  paul-envs create ~/projects/myapp --package ripgrep --package fd-find")
+		cons.WriteLn("")
+		cons.WriteLn("Flags:")
+		clihelp.PrintDefaults(cons, flagset)
 	}
-
-	if err := flagset.Parse(filtered); err != nil {
-		return nil, false, err
-	}
-
-	return p, noPrompt, nil
+	return flagset
 }
 
 func buildConfig(projectPath string, p *parsedFlags) (config.Config, error) {

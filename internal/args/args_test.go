@@ -3,6 +3,8 @@ package args
 import (
 	"bytes"
 	"context"
+	"errors"
+	"flag"
 	"os"
 	"path/filepath"
 	"strings"
@@ -137,5 +139,41 @@ func TestParseAndPrompt_NoPromptSeedDotfilesUsesTemplate(t *testing.T) {
 	}
 	if !cfg.SeedDotfiles {
 		t.Fatal("expected SeedDotfiles to be true")
+	}
+}
+
+func TestParseFlags_CollectsRepeatableFlags(t *testing.T) {
+	cons := console.New(context.Background(), strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+
+	parsed, noPrompt, err := parseFlags([]string{
+		"--no-prompt",
+		"--package", "ripgrep",
+		"--package", "fd-find",
+		"--port", "3000",
+		"--volume", "/tmp/cache:/cache:ro",
+	}, cons)
+	if err != nil {
+		t.Fatalf("parseFlags() error = %v", err)
+	}
+	if !noPrompt {
+		t.Fatal("expected noPrompt to be true")
+	}
+	if len(parsed.packages) != 2 || parsed.packages[0] != "ripgrep" || parsed.packages[1] != "fd-find" {
+		t.Fatalf("unexpected packages: %#v", parsed.packages)
+	}
+	if len(parsed.ports) != 1 || parsed.ports[0] != "3000" {
+		t.Fatalf("unexpected ports: %#v", parsed.ports)
+	}
+	if len(parsed.volumes) != 1 || parsed.volumes[0] != "/tmp/cache:/cache:ro" {
+		t.Fatalf("unexpected volumes: %#v", parsed.volumes)
+	}
+}
+
+func TestParseFlags_ReturnsHelpError(t *testing.T) {
+	cons := console.New(context.Background(), strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+
+	_, _, err := parseFlags([]string{"--help"}, cons)
+	if !errors.Is(err, flag.ErrHelp) {
+		t.Fatalf("expected flag.ErrHelp, got %v", err)
 	}
 }
