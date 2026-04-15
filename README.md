@@ -296,11 +296,14 @@ will be removed when the container is exited).
 ## TODO:
 
 - help flag per commands
+- `--no-prompt` flags for `clean` and `remove`...
+- Does cache pruning in `clean` actually do anything?
+- Add ci tests for `clean` command
+- `--no-cache` `build` flag
 - Ask which container engine to use if both podman and docker are available
 - Make `build` / `run` / `remove` / `clean` behavior adaptive if multiple container
   engine are installed: look at the one used at build time etc.
 - Add "init bash / zsh / fish" commands to simplify auto-completion setups
-- no-prompt flags for clean, remove...
 - `update` command?
 - `kill` command?
 - `up` command?
@@ -308,6 +311,3 @@ will be removed when the container is exited).
 - less gh-action scripts, more shell scripts
 - Kill containers on same image on build?
 - Reference counted container instead of master/slaves
-- Does cache pruning in `clean` actually do anything?
-- ci tests for clean command
-- Update Dockerfile when not same version
