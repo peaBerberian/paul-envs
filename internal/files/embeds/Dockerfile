@@ -66,10 +66,6 @@ ARG HOST_GID=1000
 ARG USERNAME=dev
 ARG USER_SHELL=bash
 
-# Additional packages outside the core base, separated by a space.
-# Have to be in Ubuntu's default repository
-ARG SUPPLEMENTARY_PACKAGES=""
-
 # Configurable tool installation
 ARG INSTALL_NEOVIM=false
 ARG INSTALL_STARSHIP=false
@@ -102,11 +98,6 @@ RUN if [ "$ENABLE_SUDO" = "true" ]; then \
     apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/* && \
     usermod -aG sudo ${USERNAME} && \
     echo "${USERNAME}:dev" | chpasswd; \
-  fi
-
-# Install packages the user listed as "supplementary"
-RUN if [ -n "$SUPPLEMENTARY_PACKAGES" ]; then \
-    apt-get update && apt-get install -y $SUPPLEMENTARY_PACKAGES && rm -rf /var/lib/apt/lists/*; \
   fi
 
 # Install Firefox (optional, headless for testing)
@@ -360,6 +351,10 @@ RUN if [ -n "$INSTALL_NODE" ] && [ "$INSTALL_NODE" != "none" ]; then \
 #############################################
 FROM ubuntu-tools AS ubuntu-projects
 
+# Additional packages outside the core base, separated by a space.
+# Have to be in Ubuntu's default repository
+ARG SUPPLEMENTARY_PACKAGES=""
+
 ARG USERNAME=dev
 ARG USER_SHELL=bash
 ARG ENABLE_SSH=false
@@ -389,6 +384,11 @@ RUN if [ "$ENABLE_SSH" = "true" ]; then \
     mkdir -p /home/${USERNAME}/.ssh && \
     chmod 700 /home/${USERNAME}/.ssh && \
     chown ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssh; \
+  fi
+
+# Install packages the user listed as "supplementary"
+RUN if [ -n "$SUPPLEMENTARY_PACKAGES" ]; then \
+    apt-get update && apt-get install -y $SUPPLEMENTARY_PACKAGES && rm -rf /var/lib/apt/lists/*; \
   fi
 
 # Copy initial cache to another known place so it's not replaced by our volume
