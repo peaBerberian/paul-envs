@@ -21,7 +21,7 @@ func Remove(ctx context.Context, args []string, filestore *files.FileStore, cons
 			console,
 			flagset,
 			"paul-envs remove [flags] [project-name]",
-			"Remove a project configuration and its container assets. If no project name is provided, paul-envs asks you to choose one.",
+			"Remove a single project configuration and its managed container assets. If no project name is provided, paul-envs asks you to choose one.",
 		)
 	}
 	if err := parseCommandFlags(flagset, args); err != nil {

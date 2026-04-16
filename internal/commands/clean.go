@@ -23,7 +23,7 @@ func Clean(ctx context.Context, args []string, filestore *files.FileStore, conso
 			console,
 			flagset,
 			"paul-envs clean [flags]",
-			"Remove stored paul-envs data from your computer.",
+			"Remove global paul-envs data, project configurations, and managed container assets across projects.",
 		)
 	}
 	if err := parseCommandFlags(flagset, args); err != nil {

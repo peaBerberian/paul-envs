@@ -29,11 +29,11 @@ Commands:
   list         List projects
   build        Build a project image
   run          Run or join a project container
-  remove       Remove a project and its container assets
+  remove       Remove one project and its managed assets
   version      Show paul-envs and container engine versions
   help         Show global or per-command help
   interactive  Start the guided interactive flow
-  clean        Remove stored paul-envs data and container assets
+  clean        Remove global paul-envs data and managed assets across projects
 
 Run 'paul-envs <command> --help' for command-specific flags and examples.
 `)
