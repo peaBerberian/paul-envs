@@ -126,7 +126,7 @@ func New(ctx context.Context, console *console.Console) (ContainerEngine, error)
 		if dockerErr == nil {
 			// Both are available — warn so the user isn't surprised
 			// TODO:  Set PAUL_ENVS_ENGINE=docker to override.
-			console.Warn("Both Podman and Docker are available; relying on Podman.")
+			console.Info("Both Podman and Docker are available; relying on Podman.")
 		}
 		return podman, nil
 	}
