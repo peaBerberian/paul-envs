@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 
 	"github.com/peaberberian/paul-envs/internal/console"
@@ -12,6 +13,25 @@ import (
 )
 
 func Build(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
+	var noCache bool
+	flagset := newCommandFlagSet("build", console)
+	flagset.BoolVar(&noCache, "no-cache", false, "Build the image without using cached layers")
+	flagset.Usage = func() {
+		writeCommandUsage(
+			console,
+			flagset,
+			"paul-envs build [project-name] [flags]",
+			"Build a project image. If no project name is provided, paul-envs asks you to choose one.",
+		)
+	}
+	if err := parseCommandFlags(flagset, args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+	args = flagset.Args()
+
 	containerEngine, err := engine.New(ctx, console)
 	if err != nil {
 		return err
@@ -46,7 +66,10 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 	if err != nil {
 		return fmt.Errorf("failed to obtain information on project '%s': %w", name, err)
 	}
-	if err := containerEngine.BuildImage(ctx, project); err != nil {
+	if noCache {
+		console.Info("Ignoring cached image layers for this build.")
+	}
+	if err := containerEngine.BuildImage(ctx, project, engine.BuildOptions{NoCache: noCache}); err != nil {
 		return err
 	}
 	engineInfo, err := containerEngine.Info(ctx)

@@ -21,7 +21,7 @@ type ContainerEngine interface {
 	// Return information on the current chosen "container engine" (its name, its version...)
 	Info(ctx context.Context) (EngineInfo, error)
 	// Build the image associated to the given project.
-	BuildImage(ctx context.Context, project files.ProjectEntry) error
+	BuildImage(ctx context.Context, project files.ProjectEntry, options BuildOptions) error
 	// Run the container whose image has previously been built with `BuildImage`.
 	//
 	// If `args` is empty, will start an interactive tty session with the project's shell of
@@ -61,6 +61,10 @@ type ContainerEngine interface {
 	// Remove the `ContainerEngine`'s build cache from metadata linked to this
 	// executable
 	PruneBuildCache(ctx context.Context) error
+}
+
+type BuildOptions struct {
+	NoCache bool
 }
 
 // Returns information on a specific "engine" able to create images and run containers

@@ -27,28 +27,13 @@ func newDocker(ctx context.Context) (*DockerEngine, error) {
 	return &DockerEngine{}, nil
 }
 
-func (c *DockerEngine) BuildImage(ctx context.Context, project files.ProjectEntry) error {
+func (c *DockerEngine) BuildImage(ctx context.Context, project files.ProjectEntry, options BuildOptions) error {
 	buildCfg, err := loadBuildConfig(project)
 	if err != nil {
 		return err
 	}
 
-	cmdArgs := []string{
-		"build",
-		"--file", projectDockerfilePath(project),
-		"--tag", projectImageName(project.ProjectName),
-	}
-
-	keys := make([]string, 0, len(buildCfg.Args))
-	for key := range buildCfg.Args {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		cmdArgs = append(cmdArgs, "--build-arg", fmt.Sprintf("%s=%s", key, buildCfg.Args[key]))
-	}
-	cmdArgs = append(cmdArgs, projectBaseDataDir(project))
-
+	cmdArgs := dockerBuildArgs(project, buildCfg.Args, options)
 	cmd := exec.CommandContext(ctx, "docker", cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -59,6 +44,28 @@ func (c *DockerEngine) BuildImage(ctx context.Context, project files.ProjectEntr
 		return fmt.Errorf("build failed: %w", err)
 	}
 	return nil
+}
+
+func dockerBuildArgs(project files.ProjectEntry, buildArgs map[string]string, options BuildOptions) []string {
+	cmdArgs := []string{
+		"build",
+		"--file", projectDockerfilePath(project),
+		"--tag", projectImageName(project.ProjectName),
+	}
+	if options.NoCache {
+		cmdArgs = append(cmdArgs, "--no-cache")
+	}
+
+	keys := make([]string, 0, len(buildArgs))
+	for key := range buildArgs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		cmdArgs = append(cmdArgs, "--build-arg", fmt.Sprintf("%s=%s", key, buildArgs[key]))
+	}
+	cmdArgs = append(cmdArgs, projectBaseDataDir(project))
+	return cmdArgs
 }
 
 func (c *DockerEngine) RunContainer(ctx context.Context, project files.ProjectEntry, args []string) error {
