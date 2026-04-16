@@ -15,7 +15,7 @@ _paulenvs()
     local list_flags="--help --names"
     local build_flags="--help --no-cache"
     local remove_flags="--help --no-prompt"
-    local clean_flags="--help --no-prompt --engine"
+    local clean_flags="--help --no-prompt --engine --projects --config --managed-resources --build-cache"
     local engine_values="docker podman all"
     local run_flags="--help"
     local version_flags="--help"

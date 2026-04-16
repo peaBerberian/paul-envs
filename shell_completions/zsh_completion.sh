@@ -99,6 +99,10 @@ _paulenvs() {
                     _arguments \
                         '(-h --help)'{-h,--help}'[Show help]' \
                         '--no-prompt[Apply default answers without prompting]' \
+                        '--projects[Only remove stored project configuration files]' \
+                        '--config[Only remove the global paul-envs configuration]' \
+                        '--managed-resources[Only remove managed containers, images, volumes, and networks]' \
+                        '--build-cache[Only prune cached build data associated with paul-envs images]' \
                         '--engine[Container engine to clean]:engine:(docker podman all)'
                     ;;
                 interactive)

@@ -97,12 +97,38 @@ jobs:
             echo "PROJECTS_PATH=${XDG_DATA_HOME:-$HOME/.local/share}/paul-envs/projects" >> $GITHUB_ENV
           fi
 
+      - name: Set config path
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "CONFIG_PATH=$APPDATA/paul-envs" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "CONFIG_PATH=$HOME/Library/Preferences/paul-envs" >> $GITHUB_ENV
+          else
+            echo "CONFIG_PATH=${XDG_CONFIG_HOME:-$HOME/.config}/paul-envs" >> $GITHUB_ENV
+          fi
+
       - name: Verify path normalization in run.conf files
         shell: bash
         run: |
           # Check that paths were properly written to run.conf
           cat "$PROJECTS_PATH"/test-absolute-path/run.conf
           grep "^PATH " "$PROJECTS_PATH"/test-absolute-path/run.conf
+
+      - name: Test clean subsets
+        shell: bash
+        run: |
+          mkdir -p "$CONFIG_PATH"/dotfiles
+          printf 'seeded-template\n' > "$CONFIG_PATH"/dotfiles/.paul-envs-clean-test
+
+          ./paul-envs clean --no-prompt --projects
+
+          test ! -d "$PROJECTS_PATH" || exit 1
+          test -f "$CONFIG_PATH"/dotfiles/.paul-envs-clean-test || exit 1
+
+          ./paul-envs clean --no-prompt --config
+
+          test ! -d "$CONFIG_PATH" || exit 1
 
   validation-tests:
     name: Input Validation Tests

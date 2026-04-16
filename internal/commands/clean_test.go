@@ -3,11 +3,14 @@ package commands
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/engine"
+	"github.com/peaberberian/paul-envs/internal/files"
 )
 
 func TestYesNoWithOptionalPrompt_NoPromptUsesDefault(t *testing.T) {
@@ -68,7 +71,61 @@ func TestEnginesSupportingBuildCachePrune(t *testing.T) {
 	}
 }
 
-func TestCleanHelpIncludesEngineFlag(t *testing.T) {
+func TestNewCleanOptions_DefaultsToAllSteps(t *testing.T) {
+	got := newCleanOptions(false, false, false, false)
+	if !got.projects || !got.config || !got.managedResources || !got.buildCache {
+		t.Fatalf("newCleanOptions() = %+v, want all steps enabled", got)
+	}
+}
+
+func TestNewCleanOptions_UsesRequestedSubset(t *testing.T) {
+	got := newCleanOptions(true, false, true, false)
+	if !got.projects || got.config || !got.managedResources || got.buildCache {
+		t.Fatalf("newCleanOptions() = %+v, want only projects and managedResources enabled", got)
+	}
+}
+
+func TestCleanProjectsSubsetSkipsEngineDetection(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	store, err := files.NewFileStore()
+	if err != nil {
+		t.Fatalf("NewFileStore() error = %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(store.GetProjectBuildConfigPath("alpha")), 0755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	if err := os.WriteFile(store.GetProjectBuildConfigPath("alpha"), []byte("VERSION 1\n"), 0644); err != nil {
+		t.Fatalf("write build.conf: %v", err)
+	}
+	if err := os.MkdirAll(store.GetGlobalDotfilesPath(), 0755); err != nil {
+		t.Fatalf("mkdir config dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(store.GetGlobalDotfilesPath(), ".bashrc"), []byte("echo hi\n"), 0644); err != nil {
+		t.Fatalf("write config file: %v", err)
+	}
+
+	var out bytes.Buffer
+	cons := console.New(context.Background(), strings.NewReader(""), &out, &out)
+
+	if err := Clean(context.Background(), []string{"--no-prompt", "--projects"}, store, cons); err != nil {
+		t.Fatalf("Clean(--projects) error = %v", err)
+	}
+
+	if _, err := os.Stat(store.GetProjectBuildConfigPath("alpha")); !os.IsNotExist(err) {
+		t.Fatalf("expected project data to be removed, stat err = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(store.GetGlobalDotfilesPath(), ".bashrc")); err != nil {
+		t.Fatalf("expected global config to be kept, stat err = %v", err)
+	}
+	if strings.Contains(out.String(), "Cleaning selected container engine") ||
+		strings.Contains(out.String(), "Cleaning all available engines") {
+		t.Fatalf("did not expect engine selection output, got:\n%s", out.String())
+	}
+}
+
+func TestCleanHelpIncludesSubsetFlags(t *testing.T) {
 	var out bytes.Buffer
 	cons := console.New(context.Background(), strings.NewReader(""), &out, &out)
 
@@ -81,6 +138,10 @@ func TestCleanHelpIncludesEngineFlag(t *testing.T) {
 		"Usage: paul-envs clean [flags]",
 		"--engine string",
 		"Container engine to clean: docker, podman, or all.",
+		"--projects",
+		"--config",
+		"--managed-resources",
+		"--build-cache",
 	} {
 		if !strings.Contains(got, fragment) {
 			t.Fatalf("expected help output to contain %q, got:\n%s", fragment, got)

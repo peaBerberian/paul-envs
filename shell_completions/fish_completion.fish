@@ -60,6 +60,10 @@ complete -c paul-envs -n "__fish_seen_subcommand_from interactive" -l help -s h 
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l help -s h -d 'Show help' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l no-prompt -d 'Apply default answers without prompting' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l engine -d 'Container engine to clean' -xa 'docker podman all'
+complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l projects -d 'Only remove stored project configuration files' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l config -d 'Only remove the global paul-envs configuration' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l managed-resources -d 'Only remove managed containers, images, volumes, and networks' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l build-cache -d 'Only prune cached build data associated with paul-envs images' -f
 
 # Container name completion for build, run, remove
 complete -c paul-envs -f -n "__fish_seen_subcommand_from build" -a '(__paul_envs_containers)'

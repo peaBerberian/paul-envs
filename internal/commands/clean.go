@@ -15,9 +15,17 @@ import (
 func Clean(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
 	var noPrompt bool
 	var engineSelection string
+	var projectsOnly bool
+	var configOnly bool
+	var resourcesOnly bool
+	var buildCacheOnly bool
 	flagset := newCommandFlagSet("clean", console)
 	flagset.BoolVar(&noPrompt, "no-prompt", false, "Non-interactive mode: apply the default answers to each cleanup step")
 	flagset.StringVar(&engineSelection, "engine", "", "Container engine to clean: docker, podman, or all. Default: the selected engine for this run.")
+	flagset.BoolVar(&projectsOnly, "projects", false, "Only remove stored project configuration files")
+	flagset.BoolVar(&configOnly, "config", false, "Only remove the global paul-envs configuration")
+	flagset.BoolVar(&resourcesOnly, "managed-resources", false, "Only remove managed containers, images, volumes, and networks")
+	flagset.BoolVar(&buildCacheOnly, "build-cache", false, "Only prune cached build data associated with paul-envs images")
 	flagset.Usage = func() {
 		writeCommandUsage(
 			console,
@@ -38,77 +46,114 @@ func Clean(ctx context.Context, args []string, filestore *files.FileStore, conso
 		return err
 	}
 
-	console.Info("\n1. Projects' configuration")
-	console.WriteLn("This will clean-up the container configurations you created with the 'create' command.")
-	choice, err := yesNoWithOptionalPrompt(console, noPrompt, "Remove projects configuration files?", true)
-	if err != nil {
-		return err
-	} else if !choice {
-		console.WriteLn("\nSkipping container configurations")
-	} else {
-		console.WriteLn("\nRemoving projects configuration files...")
-		if err := filestore.DeleteDataDirectory(); err != nil {
-			return err
-		}
-	}
+	cleanOpts := newCleanOptions(projectsOnly, configOnly, resourcesOnly, buildCacheOnly)
 
-	console.Info("\n2. paul-envs' configuration")
-	console.WriteLn("This will reset the global 'paul-envs' configuration.")
-	choice, err = yesNoWithOptionalPrompt(console, noPrompt, "Remove paul-envs configuration?", true)
-	if err != nil {
-		return err
-	} else if !choice {
-		console.WriteLn("\nSkipping container configurations")
-	} else {
-		console.WriteLn("\nRemoving projects configuration files...")
-		if err := filestore.DeleteConfigDirectory(); err != nil {
-			return err
-		}
-	}
-
-	containerEngines, err := engine.NewSet(ctx, console, selectedEngine)
-	if err != nil {
-		return err
-	}
-	describeSelectedEngines(console, containerEngines, selectedEngine)
-
-	console.Info("\n3. Managed paul-envs resources")
-	console.WriteLn("This will remove containers, images, volumes, and networks created by paul-envs.")
-	choice, err = yesNoWithOptionalPrompt(console, noPrompt, "Remove managed resources?", true)
-	if err != nil {
-		return err
-	} else if !choice {
-		console.WriteLn("\nSkipping managed resource removal")
-	} else {
-		if err := removeManagedResources(ctx, containerEngines, console); err != nil {
-			return err
-		}
-	}
-
-	buildCacheEngines := enginesSupportingBuildCachePrune(containerEngines)
-	unsupportedBuildCacheEngines := enginesWithoutBuildCachePrune(containerEngines)
-	if len(buildCacheEngines) == 0 {
-		console.Info("\n4. Builder cache")
-		console.WriteLn("Scoped builder-cache pruning is not supported for: %s.", strings.Join(engineNames(unsupportedBuildCacheEngines), ", "))
-	} else {
-		console.Info("\n4. Builder cache")
-		console.WriteLn("This will remove cached build data associated with paul-envs images.")
-		console.WriteLn("Future builds may be slower.")
-		if len(unsupportedBuildCacheEngines) > 0 {
-			console.WriteLn("Scoped builder-cache pruning will be skipped for: %s.", strings.Join(engineNames(unsupportedBuildCacheEngines), ", "))
-		}
-		choice, err = yesNoWithOptionalPrompt(console, noPrompt, "Prune builder cache?", false)
+	if cleanOpts.projects {
+		console.Info("\n1. Projects' configuration")
+		console.WriteLn("This will clean-up the container configurations you created with the 'create' command.")
+		choice, err := yesNoWithOptionalPrompt(console, noPrompt, "Remove projects configuration files?", true)
 		if err != nil {
 			return err
 		} else if !choice {
-			console.WriteLn("\nSkipping builder cache pruning")
-		} else if err := pruneBuildCache(ctx, buildCacheEngines, console); err != nil {
+			console.WriteLn("\nSkipping container configurations")
+		} else {
+			console.WriteLn("\nRemoving projects configuration files...")
+			if err := filestore.DeleteDataDirectory(); err != nil {
+				return err
+			}
+		}
+	}
+
+	if cleanOpts.config {
+		console.Info("\n2. paul-envs' configuration")
+		console.WriteLn("This will reset the global 'paul-envs' configuration.")
+		choice, err := yesNoWithOptionalPrompt(console, noPrompt, "Remove paul-envs configuration?", true)
+		if err != nil {
 			return err
+		} else if !choice {
+			console.WriteLn("\nSkipping paul-envs configuration")
+		} else {
+			console.WriteLn("\nRemoving paul-envs configuration...")
+			if err := filestore.DeleteConfigDirectory(); err != nil {
+				return err
+			}
+		}
+	}
+
+	var containerEngines []engine.ContainerEngine
+	if cleanOpts.managedResources || cleanOpts.buildCache {
+		containerEngines, err = engine.NewSet(ctx, console, selectedEngine)
+		if err != nil {
+			return err
+		}
+		describeSelectedEngines(console, containerEngines, selectedEngine)
+	}
+
+	if cleanOpts.managedResources {
+		console.Info("\n3. Managed paul-envs resources")
+		console.WriteLn("This will remove containers, images, volumes, and networks created by paul-envs.")
+		choice, err := yesNoWithOptionalPrompt(console, noPrompt, "Remove managed resources?", true)
+		if err != nil {
+			return err
+		} else if !choice {
+			console.WriteLn("\nSkipping managed resource removal")
+		} else {
+			if err := removeManagedResources(ctx, containerEngines, console); err != nil {
+				return err
+			}
+		}
+	}
+
+	if cleanOpts.buildCache {
+		buildCacheEngines := enginesSupportingBuildCachePrune(containerEngines)
+		unsupportedBuildCacheEngines := enginesWithoutBuildCachePrune(containerEngines)
+		if len(buildCacheEngines) == 0 {
+			console.Info("\n4. Builder cache")
+			console.WriteLn("Scoped builder-cache pruning is not supported for: %s.", strings.Join(engineNames(unsupportedBuildCacheEngines), ", "))
+		} else {
+			console.Info("\n4. Builder cache")
+			console.WriteLn("This will remove cached build data associated with paul-envs images.")
+			console.WriteLn("Future builds may be slower.")
+			if len(unsupportedBuildCacheEngines) > 0 {
+				console.WriteLn("Scoped builder-cache pruning will be skipped for: %s.", strings.Join(engineNames(unsupportedBuildCacheEngines), ", "))
+			}
+			choice, err := yesNoWithOptionalPrompt(console, noPrompt, "Prune builder cache?", false)
+			if err != nil {
+				return err
+			} else if !choice {
+				console.WriteLn("\nSkipping builder cache pruning")
+			} else if err := pruneBuildCache(ctx, buildCacheEngines, console); err != nil {
+				return err
+			}
 		}
 	}
 
 	console.Success("\nCleanup complete!")
 	return nil
+}
+
+type cleanOptions struct {
+	projects         bool
+	config           bool
+	managedResources bool
+	buildCache       bool
+}
+
+func newCleanOptions(projects, config, managedResources, buildCache bool) cleanOptions {
+	if !projects && !config && !managedResources && !buildCache {
+		return cleanOptions{
+			projects:         true,
+			config:           true,
+			managedResources: true,
+			buildCache:       true,
+		}
+	}
+	return cleanOptions{
+		projects:         projects,
+		config:           config,
+		managedResources: managedResources,
+		buildCache:       buildCache,
+	}
 }
 
 func parseCleanEngineSelection(value string) (engine.Selection, error) {

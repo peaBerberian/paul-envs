@@ -295,7 +295,6 @@ will be removed when the container is exited).
 
 ## TODO:
 
-- Add ci tests for `clean` command
 - Make `build` / `run` / `remove` behavior adaptive if multiple container
   engine are installed: look at the one used at build time etc.
 - Add "init bash / zsh / fish" commands to simplify auto-completion setups
