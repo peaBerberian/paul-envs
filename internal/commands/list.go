@@ -35,12 +35,6 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 		return fmt.Errorf("could not list all projects: %w", err)
 	}
 
-	containerEngine, err := engine.New(ctx, console)
-	if err != nil {
-		console.Warn("Could not instantiate container engine: %w", err)
-	}
-
-	var lastImageInfoWarning error = nil
 	if len(entries) == 0 {
 		console.WriteLn("  (no project found)")
 		console.WriteLn("Hint: Create one with 'paul-envs create <path>'")
@@ -49,6 +43,12 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 			console.WriteLn(entry.ProjectName)
 		}
 	} else {
+		containerEngine, err := engine.New(ctx, console)
+		if err != nil {
+			console.Warn("Could not instantiate container engine: %w", err)
+		}
+
+		var lastImageInfoWarning error = nil
 		for _, entry := range entries {
 			var imageInfo *engine.ImageInfo
 			if containerEngine == nil {
