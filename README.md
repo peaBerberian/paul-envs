@@ -227,6 +227,9 @@ paul-envs remove myApp
 # Get version information
 paul-envs version
 
+# Print shell completions
+paul-envs completion bash
+
 # Start an interactive session
 paul-envs interactive
 
@@ -235,6 +238,19 @@ paul-envs help
 
 # Uninstall paul-envs completely from your system (remove all projects, config etc.)
 paul-envs clean
+```
+
+To install completions in common user-local locations:
+
+```sh
+# bash
+paul-envs completion bash > ~/.local/share/bash-completion/completions/paul-envs
+
+# zsh
+paul-envs completion zsh > ~/.local/share/zsh/site-functions/_paul-envs
+
+# fish
+paul-envs completion fish > ~/.config/fish/completions/paul-envs.fish
 ```
 
 ### Note: The dotfiles directory
@@ -295,7 +311,7 @@ will be removed when the container is exited).
 
 ## TODO:
 
-- Add "init bash / zsh / fish" commands to simplify auto-completion setups
+- `list`: Should it also indicate if active? Should it poll all container engines?
 - `kill` command?
 - `up` command?
 - Add `kakoune` and `helix` as potential in-container editors

@@ -74,6 +74,8 @@ func runCommand(
 		return commands.Remove(ctx, args, filestore, console)
 	case "version", "v", "--version", "-v":
 		return commands.Version(ctx, args, console)
+	case "completion":
+		return commands.Completion(ctx, args, console)
 	case "clean", "x", "--clean", "-x":
 		return commands.Clean(ctx, args, filestore, console)
 	case "interactive", "i", "--interactive", "-i":

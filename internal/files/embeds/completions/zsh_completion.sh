@@ -11,6 +11,7 @@ _paulenvs() {
         'remove:Remove a container'
         'help:Show help'
         'version:Show version'
+        'completion:Print shell completion scripts'
         'clean:Remove all stored paul-envs data from your computer'
     )
 
@@ -58,7 +59,7 @@ _paulenvs() {
                         '--delta[Install latest Delta]' \
                         '--open-code[Install latest opencode]' \
                         '--claude-code[Install latest Claude Code]' \
-												'--codex[Install latest codex (from OpenAI)]' \
+                        '--codex[Install latest codex (from OpenAI)]' \
                         '--firefox[Install Mozilla Firefox]' \
                         '--no-mise[Prevent Mise installation]' \
                         '*--package[Additional package from Ubuntu repo]:package:' \
@@ -94,6 +95,11 @@ _paulenvs() {
                 version)
                     _arguments \
                         '(-h --help)'{-h,--help}'[Show help]'
+                    ;;
+                completion)
+                    _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        "2:shell:(bash zsh fish)"
                     ;;
                 clean)
                     _arguments \

@@ -8,10 +8,15 @@
 - dotfiles now only apply at `run`-time. Updating dotfiles does not lead to a re-build
 - `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL` are now part of `run.conf`, and do not necessitate a re-build when updated
 - `create` command flags now don't silently disable other unspecified args (e.g. `--neovim` which - as a tool - would imply no other tool) in CLI mode, confirmation is asked instead
+- `run` and `remove` by default now rely on the last relied on container engine
+- `clean` command steps now are variable based on the container engine to better reflect what they do
 
 ### Features
 
 - Add `DOTFILES_PATH` to `run.conf` to let user configure where dotfiles are
+- Add `--engine` flag to `build` command to explicitly force a container engine
+- Add `--engine` flag to `run` command to explicitly force a container engine
+- Add `--engine` flag to `remove` command to explicitly force a container engine
 - Add `--no-prompt` flag to `remove` command
 - Add `--no-cache` flag to `build` command
 - Add `--no-prompt` flag to `clean` command
@@ -20,6 +25,7 @@
 - Add `--managed-resources` flag to `clean` command
 - Add `--build-cache` flag to `clean` command
 - `help` flag per-command
+- More resilient Dockerfile when firefox installation fails
 
 ### Bug fixes
 

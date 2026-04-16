@@ -6,7 +6,7 @@ _paulenvs()
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
     # Main commands
-    local commands="create list build run remove version interactive help clean"
+    local commands="create list build run remove version completion interactive help clean"
 
     # Options for create command
     local create_flags="--help --name --uid --gid --username --shell --nodejs --rust --python --go --git-name --git-email --package --enable-ssh --enable-sudo --neovim --starship --oh-my-posh --atuin --zellij --jujutsu --delta --open-code --claude-code --codex --firefox --no-mise --port --volume"
@@ -19,6 +19,7 @@ _paulenvs()
     local engine_values="docker podman all"
     local run_flags="--help"
     local version_flags="--help"
+    local completion_values="bash zsh fish"
     local interactive_flags="--help"
 
     # Get list of existing containers from paul-envs ls
@@ -106,6 +107,14 @@ _paulenvs()
             ;;
         version)
             COMPREPLY=( $(compgen -W "${version_flags}" -- ${cur}) )
+            return 0
+            ;;
+        completion)
+            if [[ $COMP_CWORD -eq 2 ]]; then
+                COMPREPLY=( $(compgen -W "${completion_values}" -- ${cur}) )
+            elif [[ "${cur}" == --* ]]; then
+                COMPREPLY=( $(compgen -W "--help" -- ${cur}) )
+            fi
             return 0
             ;;
         interactive)

@@ -14,6 +14,7 @@ complete -c paul-envs -f -n __fish_use_subcommand -a run -d 'Start a container'
 complete -c paul-envs -f -n __fish_use_subcommand -a remove -d 'Remove a container'
 complete -c paul-envs -f -n __fish_use_subcommand -a help -d 'Show help'
 complete -c paul-envs -f -n __fish_use_subcommand -a version -d 'Show version'
+complete -c paul-envs -f -n __fish_use_subcommand -a completion -d 'Print shell completion scripts'
 complete -c paul-envs -f -n __fish_use_subcommand -a clean -d 'Remove all stored paul-envs data from your computer'
 
 # Create command options
@@ -56,6 +57,8 @@ complete -c paul-envs -n "__fish_seen_subcommand_from run" -l help -s h -d 'Show
 complete -c paul-envs -n "__fish_seen_subcommand_from remove" -l help -s h -d 'Show help' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from remove" -l no-prompt -d 'Skip confirmation and require a project name' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from version" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from completion" -l help -s h -d 'Show help' -f
+complete -c paul-envs -f -n "__fish_seen_subcommand_from completion" -a 'bash zsh fish'
 complete -c paul-envs -n "__fish_seen_subcommand_from interactive" -l help -s h -d 'Show help' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l help -s h -d 'Show help' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l no-prompt -d 'Apply default answers without prompting' -f

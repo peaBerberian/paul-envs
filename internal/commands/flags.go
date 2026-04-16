@@ -28,11 +28,14 @@ func writeCommandUsage(
 		console.WriteLn("")
 		console.WriteLn("%s", description)
 	}
+	console.WriteLn("")
+	console.WriteLn("Flags:")
 	if hasFlags(flagset) {
-		console.WriteLn("")
-		console.WriteLn("Flags:")
 		clihelp.PrintDefaults(console, flagset)
+		console.WriteLn("")
 	}
+	console.WriteLn("  --help")
+	console.WriteLn("    Show help.")
 }
 
 func hasFlags(flagset *flag.FlagSet) bool {

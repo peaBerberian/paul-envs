@@ -31,6 +31,7 @@ Commands:
   run          Run or join a project container
   remove       Remove one project and its managed assets
   version      Show paul-envs and container engine versions
+  completion   Print shell completion scripts
   help         Show global or per-command help
   interactive  Start the guided interactive flow
   clean        Remove global paul-envs data and managed assets across projects
