@@ -73,11 +73,11 @@ func runCommand(
 	case "remove", "rm", "r", "--remove", "-r":
 		return commands.Remove(ctx, args, filestore, console)
 	case "version", "v", "--version", "-v":
-		return commands.Version(ctx, console)
+		return commands.Version(ctx, args, console)
 	case "clean", "x", "--clean", "-x":
 		return commands.Clean(ctx, args, filestore, console)
 	case "interactive", "i", "--interactive", "-i":
-		return commands.Interactive(ctx, filestore, console)
+		return commands.Interactive(ctx, args, filestore, console)
 	case "help", "h", "--help", "-h":
 		if len(args) == 0 || isHelpCommand(args[0]) {
 			commands.Help(filestore, console)

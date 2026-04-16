@@ -2,6 +2,8 @@ package commands
 
 import (
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 
 	versions "github.com/peaberberian/paul-envs/internal"
@@ -9,11 +11,27 @@ import (
 	"github.com/peaberberian/paul-envs/internal/engine"
 )
 
-func Version(ctx context.Context, console *console.Console) error {
+func Version(ctx context.Context, args []string, console *console.Console) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
+	}
+
+	flagset := newCommandFlagSet("version", console)
+	flagset.Usage = func() {
+		writeCommandUsage(
+			console,
+			flagset,
+			"paul-envs version [flags]",
+			"Show the current paul-envs version and the detected container engine version.",
+		)
+	}
+	if err := parseCommandFlags(flagset, args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
 	}
 
 	console.WriteLn("paul-envs version %d.%d.%d",

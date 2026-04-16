@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 
 	"github.com/peaberberian/paul-envs/internal/console"
@@ -17,6 +18,23 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 		return ctx.Err()
 	default:
 	}
+
+	flagset := newCommandFlagSet("run", console)
+	flagset.Usage = func() {
+		writeCommandUsage(
+			console,
+			flagset,
+			"paul-envs run [project-name] [command...] [flags]",
+			"Run a project container or join the already running one. If no project name is provided, paul-envs asks you to choose one.",
+		)
+	}
+	if err := parseCommandFlags(flagset, args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+	args = flagset.Args()
 
 	containerEngine, err := engine.New(ctx, console)
 	if err != nil {

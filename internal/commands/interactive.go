@@ -2,13 +2,31 @@ package commands
 
 import (
 	"context"
+	"errors"
+	"flag"
 	"strings"
 
 	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/files"
 )
 
-func Interactive(ctx context.Context, fs *files.FileStore, c *console.Console) error {
+func Interactive(ctx context.Context, args []string, fs *files.FileStore, c *console.Console) error {
+	flagset := newCommandFlagSet("interactive", c)
+	flagset.Usage = func() {
+		writeCommandUsage(
+			c,
+			flagset,
+			"paul-envs interactive [flags]",
+			"Start the guided interactive flow.",
+		)
+	}
+	if err := parseCommandFlags(flagset, args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+
 	for {
 		c.WriteLn("")
 		c.Info("Available commands:")
@@ -46,9 +64,9 @@ func Interactive(ctx context.Context, fs *files.FileStore, c *console.Console) e
 		case "5", "remove", "rm":
 			cmdErr = Remove(ctx, []string{}, fs, c)
 		case "6", "version":
-			cmdErr = Version(ctx, c)
+			cmdErr = Version(ctx, []string{}, c)
 		case "7", "clean":
-			cmdErr = Clean(ctx, fs, c)
+			cmdErr = Clean(ctx, []string{}, fs, c)
 		case "8", "exit", "quit", "q":
 			c.Success("Goodbye!")
 			return nil
