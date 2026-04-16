@@ -75,7 +75,7 @@ func runCommand(
 	case "version", "v", "--version", "-v":
 		return commands.Version(ctx, console)
 	case "clean", "x", "--clean", "-x":
-		return commands.Clean(ctx, filestore, console)
+		return commands.Clean(ctx, args, filestore, console)
 	case "interactive", "i", "--interactive", "-i":
 		return commands.Interactive(ctx, filestore, console)
 	case "help", "h", "--help", "-h":

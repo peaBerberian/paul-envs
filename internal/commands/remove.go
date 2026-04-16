@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 
 	"github.com/peaberberian/paul-envs/internal/console"
@@ -12,8 +13,30 @@ import (
 )
 
 func Remove(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
+	var noPrompt bool
+	flagset := newCommandFlagSet("remove", console)
+	flagset.BoolVar(&noPrompt, "no-prompt", false, "Non-interactive mode: require a project name and skip the confirmation prompt")
+	flagset.Usage = func() {
+		writeCommandUsage(
+			console,
+			flagset,
+			"paul-envs remove [flags] [project-name]",
+			"Remove a project configuration and its container assets. If no project name is provided, paul-envs asks you to choose one.",
+		)
+	}
+	if err := parseCommandFlags(flagset, args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+	args = flagset.Args()
+
 	var name string
 	if len(args) == 0 {
+		if noPrompt {
+			return errors.New("project name is required in --no-prompt mode")
+		}
 		console.WriteLn("No project name given, listing projects...")
 		entries, err := filestore.GetAllProjects()
 		if err != nil {
@@ -49,12 +72,16 @@ func Remove(ctx context.Context, args []string, filestore *files.FileStore, cons
 	// 	return fmt.Errorf("Project '%s' not found\nHint: Use 'paul-envs list' to see available projects", name)
 	// }
 
-	choice, err := console.AskYesNo(fmt.Sprintf("Remove project '%s'?", name), false)
-	if err != nil {
-		return err
-	}
-	if !choice {
-		return nil
+	if noPrompt {
+		console.Info("Skipping confirmation prompt because --no-prompt was provided.")
+	} else {
+		choice, err := console.AskYesNo(fmt.Sprintf("Remove project '%s'?", name), false)
+		if err != nil {
+			return err
+		}
+		if !choice {
+			return nil
+		}
 	}
 
 	containerEngine, err := engine.New(ctx, console)

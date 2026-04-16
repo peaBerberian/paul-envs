@@ -2,6 +2,8 @@ package commands
 
 import (
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 
 	"github.com/peaberberian/paul-envs/internal/console"
@@ -9,10 +11,28 @@ import (
 	"github.com/peaberberian/paul-envs/internal/files"
 )
 
-func Clean(ctx context.Context, filestore *files.FileStore, console *console.Console) error {
+func Clean(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
+	var noPrompt bool
+	flagset := newCommandFlagSet("clean", console)
+	flagset.BoolVar(&noPrompt, "no-prompt", false, "Non-interactive mode: apply the default answers to each cleanup step")
+	flagset.Usage = func() {
+		writeCommandUsage(
+			console,
+			flagset,
+			"paul-envs clean [flags]",
+			"Remove stored paul-envs data from your computer.",
+		)
+	}
+	if err := parseCommandFlags(flagset, args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+
 	console.Info("\n1. Projects' configuration")
 	console.WriteLn("This will clean-up the container configurations you created with the 'create' command.")
-	choice, err := console.AskYesNo("Remove projects configuration files?", true)
+	choice, err := yesNoWithOptionalPrompt(console, noPrompt, "Remove projects configuration files?", true)
 	if err != nil {
 		return err
 	} else if !choice {
@@ -26,7 +46,7 @@ func Clean(ctx context.Context, filestore *files.FileStore, console *console.Con
 
 	console.Info("\n2. paul-envs' configuration")
 	console.WriteLn("This will reset the global 'paul-envs' configuration.")
-	choice, err = console.AskYesNo("Remove paul-envs configuration?", true)
+	choice, err = yesNoWithOptionalPrompt(console, noPrompt, "Remove paul-envs configuration?", true)
 	if err != nil {
 		return err
 	} else if !choice {
@@ -45,7 +65,7 @@ func Clean(ctx context.Context, filestore *files.FileStore, console *console.Con
 
 	console.Info("\n3. Container images removal")
 	console.WriteLn("This will clean the container images built through the 'build' command.")
-	choice, err = console.AskYesNo("Remove containers?", true)
+	choice, err = yesNoWithOptionalPrompt(console, noPrompt, "Remove containers?", true)
 	if err != nil {
 		return err
 	} else if !choice {
@@ -67,7 +87,7 @@ func Clean(ctx context.Context, filestore *files.FileStore, console *console.Con
 
 	console.Info("\n4. Image build cache?")
 	console.WriteLn("This will free up disk space but slow down future rebuilds.")
-	choice, err = console.AskYesNo("Remove cache?", false)
+	choice, err = yesNoWithOptionalPrompt(console, noPrompt, "Remove cache?", false)
 	if err != nil {
 		return err
 	} else if !choice {
@@ -78,6 +98,14 @@ func Clean(ctx context.Context, filestore *files.FileStore, console *console.Con
 
 	console.Success("\nCleanup complete!")
 	return nil
+}
+
+func yesNoWithOptionalPrompt(console *console.Console, noPrompt bool, prompt string, defaultVal bool) (bool, error) {
+	if !noPrompt {
+		return console.AskYesNo(prompt, defaultVal)
+	}
+	console.Info("Using default answer for '%s': %t", prompt, defaultVal)
+	return defaultVal, nil
 }
 
 func removeContainers(ctx context.Context, containerEngine engine.ContainerEngine, console *console.Console) error {
