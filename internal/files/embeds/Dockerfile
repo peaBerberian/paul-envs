@@ -102,13 +102,21 @@ RUN if [ "$ENABLE_SUDO" = "true" ]; then \
 
 # Install Firefox (optional, headless for testing)
 RUN if [ "$INSTALL_FIREFOX" = "true" ]; then \
-    apt-get update && apt-get install -y \
+    retry_apt_update() { \
+      for i in 1 2 3 4 5; do \
+        apt-get update && return 0; \
+        rm -rf /var/lib/apt/lists/*; \
+        sleep 15; \
+      done; \
+      return 1; \
+    }; \
+    retry_apt_update && apt-get install -y \
       software-properties-common \
     && add-apt-repository -y ppa:mozillateam/ppa \
     && echo 'Package: *' > /etc/apt/preferences.d/mozilla-firefox \
     && echo 'Pin: release o=LP-PPA-mozillateam' >> /etc/apt/preferences.d/mozilla-firefox \
     && echo 'Pin-Priority: 1001' >> /etc/apt/preferences.d/mozilla-firefox \
-    && apt-get update \
+    && retry_apt_update \
     && apt-get install -y firefox \
     && rm -rf /var/lib/apt/lists/*; \
   fi
