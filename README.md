@@ -2,9 +2,9 @@
 
 `paul-envs` is a dev container manager to let me easily work on multiple large
 projects with rapidly changing dependencies in isolated and minimal
-environments.
+preconfigured environments.
 
-<video src="https://github.com/user-attachments/assets/0eb8bbb8-5ad4-4c8d-8d80-f92fbb0072c4"></video>
+<video src="https://github.com/user-attachments/assets/4bebeed3-de20-4dfc-bc32-6218a2b60284"></video>
 
 _Video: Creating and running a project with `paul-envs`. Here even development
 itself can take place inside the container._
