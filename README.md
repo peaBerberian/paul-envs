@@ -298,7 +298,6 @@ will be removed when the container is exited).
 - Make `build` / `run` / `remove` behavior adaptive if multiple container
   engine are installed: look at the one used at build time etc.
 - Add "init bash / zsh / fish" commands to simplify auto-completion setups
-- `update` command?
 - `kill` command?
 - `up` command?
 - Add `kakoune` and `helix` as potential in-container editors
