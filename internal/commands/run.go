@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/peaberberian/paul-envs/internal/console"
-	"github.com/peaberberian/paul-envs/internal/engine"
 	"github.com/peaberberian/paul-envs/internal/files"
 	"github.com/peaberberian/paul-envs/internal/utils"
 )
@@ -20,6 +19,8 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 	}
 
 	flagset := newCommandFlagSet("run", console)
+	var engineSelection string
+	flagset.StringVar(&engineSelection, "engine", "", "Container engine to use: docker or podman. Default: the last build engine for the project, otherwise auto-select.")
 	flagset.Usage = func() {
 		writeCommandUsage(
 			console,
@@ -35,11 +36,6 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 		return err
 	}
 	args = flagset.Args()
-
-	containerEngine, err := engine.New(ctx, console)
-	if err != nil {
-		return err
-	}
 
 	var name string
 	var cmdArgs []string
@@ -85,6 +81,15 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 		return fmt.Errorf("cannot run project '%s': %w", name, err)
 	}
 
+	requestedEngine, err := parseCommandEngineSelection(engineSelection)
+	if err != nil {
+		return err
+	}
+	containerEngine, selectedEngine, err := newProjectEngine(ctx, name, requestedEngine, filestore, console)
+	if err != nil {
+		return err
+	}
+
 	project, err := filestore.GetProject(name)
 	if err != nil {
 		return fmt.Errorf("failed to obtain information on project '%s': %w", name, err)
@@ -100,7 +105,7 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 		if err != nil || !choice {
 			return fmt.Errorf("please run 'paul-envs build %s' first", project.ProjectName)
 		}
-		if err = Build(ctx, []string{project.ProjectName}, filestore, console); err != nil {
+		if err = Build(ctx, buildArgsForEngine(project.ProjectName, selectedEngine), filestore, console); err != nil {
 			return fmt.Errorf("did not succeed to build project: %w", err)
 		}
 	}
@@ -127,7 +132,7 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 			console.WriteLn("The '%s' project needs to be re-built: %s", project.ProjectName, reason)
 			choice, err := console.AskYesNo("Do you want to build it first?", true)
 			if err != nil || choice {
-				if err = Build(ctx, []string{project.ProjectName}, filestore, console); err != nil {
+				if err = Build(ctx, buildArgsForEngine(project.ProjectName, selectedEngine), filestore, console); err != nil {
 					return fmt.Errorf("did not succeed to build project: %w", err)
 				}
 			}

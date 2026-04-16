@@ -14,8 +14,10 @@ import (
 
 func Build(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
 	var noCache bool
+	var engineSelection string
 	flagset := newCommandFlagSet("build", console)
 	flagset.BoolVar(&noCache, "no-cache", false, "Build the image without using cached layers")
+	flagset.StringVar(&engineSelection, "engine", "", "Container engine to use for this build: docker or podman.\nDefault: auto-select, preferring Podman.")
 	flagset.Usage = func() {
 		writeCommandUsage(
 			console,
@@ -32,7 +34,7 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 	}
 	args = flagset.Args()
 
-	containerEngine, err := engine.New(ctx, console)
+	selectedEngine, err := parseCommandEngineSelection(engineSelection)
 	if err != nil {
 		return err
 	}
@@ -50,6 +52,11 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 
 	if err := ensureProjectCompatible(name, filestore, console); err != nil {
 		return fmt.Errorf("cannot build project '%s': %w", name, err)
+	}
+
+	containerEngine, err := engine.NewSelected(ctx, console, selectedEngine)
+	if err != nil {
+		return err
 	}
 
 	if err = filestore.RefreshBaseFiles(); err != nil {

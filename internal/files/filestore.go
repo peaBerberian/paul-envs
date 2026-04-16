@@ -204,6 +204,11 @@ func (f *FileStore) getBuildInfoFilePathFor(projectName string) string {
 	return filepath.Join(f.getProjectInternalDir(projectName), buildInfoFilename)
 }
 
+// Get path to the 'project.buildinfo' file associated to a project.
+func (f *FileStore) GetProjectBuildInfoPath(projectName string) string {
+	return f.getBuildInfoFilePathFor(projectName)
+}
+
 // Get directory where a specific project's files will be put.
 func (f *FileStore) getProjectDir(name string) string {
 	return filepath.Join(f.projectsDir, name)

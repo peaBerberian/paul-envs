@@ -492,6 +492,14 @@ func (filestore *FileStore) NeedsRebuild(projectName string, currentEngineName s
 	return false, RebuildNotNeeded, nil
 }
 
+func (filestore *FileStore) GetBuildEngineSelection(projectName string) (string, error) {
+	buildInfo, err := filestore.ReadBuildInfo(projectName)
+	if err != nil {
+		return "", err
+	}
+	return buildInfo.containerEngine, nil
+}
+
 func (filestore *FileStore) ValidateProjectLock(projectName string) (ProjectLockStatus, error) {
 	pInfo, err := filestore.ReadProjectInfo(projectName)
 	if err != nil {

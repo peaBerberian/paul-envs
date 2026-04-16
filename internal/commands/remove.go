@@ -14,8 +14,10 @@ import (
 
 func Remove(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
 	var noPrompt bool
+	var engineSelection string
 	flagset := newCommandFlagSet("remove", console)
 	flagset.BoolVar(&noPrompt, "no-prompt", false, "Non-interactive mode: require a project name and skip the confirmation prompt")
+	flagset.StringVar(&engineSelection, "engine", "", "Container engine to use for asset removal: docker or podman. Default: the last build engine for the project, otherwise auto-select.")
 	flagset.Usage = func() {
 		writeCommandUsage(
 			console,
@@ -84,7 +86,11 @@ func Remove(ctx context.Context, args []string, filestore *files.FileStore, cons
 		}
 	}
 
-	containerEngine, err := engine.New(ctx, console)
+	requestedEngine, err := parseCommandEngineSelection(engineSelection)
+	if err != nil {
+		return err
+	}
+	containerEngine, _, err := newProjectEngine(ctx, name, requestedEngine, filestore, console)
 	if err != nil {
 		return err
 	}

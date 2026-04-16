@@ -539,6 +539,155 @@ jobs:
             *.log
           retention-days: 7
 
+  engine-selection:
+    name: Engine Selection Integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Check go version
+        run: go version
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Podman
+        run: sudo apt-get update && sudo apt-get install -y podman
+
+      - name: Verify both engines
+        shell: bash
+        run: |
+          docker --version
+          podman --version
+
+      - name: Set Up paul-envs
+        shell: bash
+        run: |
+          make
+          cp dist/paul-envs .
+          mkdir -p test-project
+          echo "# Engine Selection Test Project" > test-project/README.md
+          echo "echo engine-selection" > test-project/test.sh
+          chmod +x test-project/test.sh
+
+      - name: Set projects path
+        shell: bash
+        run: |
+          echo "PROJECTS_PATH=${XDG_DATA_HOME:-$HOME/.local/share}/paul-envs/projects" >> $GITHUB_ENV
+
+      - name: Reject unsupported engine selection on command flags
+        shell: bash
+        run: |
+          ./paul-envs create ./test-project --no-prompt --name invalid-engine --shell bash
+
+          if ./paul-envs build --engine all invalid-engine >build-invalid.log 2>&1; then
+            echo "build unexpectedly accepted --engine all"
+            exit 1
+          fi
+          grep 'invalid --engine value "all"' build-invalid.log
+
+          if ./paul-envs remove --no-prompt --engine all invalid-engine >remove-invalid.log 2>&1; then
+            echo "remove unexpectedly accepted --engine all"
+            exit 1
+          fi
+          grep 'invalid --engine value "all"' remove-invalid.log
+
+      - name: Force Docker build and reuse it on run
+        shell: bash
+        run: |
+          ./paul-envs create ./test-project --no-prompt --name forced-docker --shell bash
+          ./paul-envs build --engine docker forced-docker
+
+          grep '^CONTAINER_ENGINE=docker$' "$PROJECTS_PATH"/forced-docker/.paul-env/project.buildinfo
+          docker image inspect paulenv:forced-docker >/dev/null
+          ! podman image inspect paulenv:forced-docker >/dev/null 2>&1
+
+          RUN_OUTPUT=$(timeout 30s ./paul-envs run forced-docker bash -c "./test.sh && echo docker-default-run" 2>&1)
+          echo "$RUN_OUTPUT"
+          grep "Using the last build engine for 'forced-docker': docker." <<<"$RUN_OUTPUT"
+          grep "docker-default-run" <<<"$RUN_OUTPUT"
+          ! grep "needs to be re-built: built on a different container engine" <<<"$RUN_OUTPUT"
+
+      - name: Force Podman build and reuse it on run
+        shell: bash
+        run: |
+          ./paul-envs create ./test-project --no-prompt --name forced-podman --shell bash
+          ./paul-envs build --engine podman forced-podman
+
+          grep '^CONTAINER_ENGINE=podman$' "$PROJECTS_PATH"/forced-podman/.paul-env/project.buildinfo
+          podman image inspect paulenv:forced-podman >/dev/null
+          ! docker image inspect paulenv:forced-podman >/dev/null 2>&1
+
+          RUN_OUTPUT=$(timeout 30s ./paul-envs run forced-podman bash -c "./test.sh && echo podman-default-run" 2>&1)
+          echo "$RUN_OUTPUT"
+          grep "Using the last build engine for 'forced-podman': podman." <<<"$RUN_OUTPUT"
+          grep "podman-default-run" <<<"$RUN_OUTPUT"
+          ! grep "needs to be re-built: built on a different container engine" <<<"$RUN_OUTPUT"
+
+      - name: Run with the other engine triggers rebuild and switches buildinfo
+        shell: bash
+        run: |
+          ./paul-envs create ./test-project --no-prompt --name run-switch-engine --shell bash
+          ./paul-envs build --engine docker run-switch-engine
+
+          grep '^CONTAINER_ENGINE=docker$' "$PROJECTS_PATH"/run-switch-engine/.paul-env/project.buildinfo
+          docker image inspect paulenv:run-switch-engine >/dev/null
+          ! podman image inspect paulenv:run-switch-engine >/dev/null 2>&1
+
+          RUN_OUTPUT=$(printf 'y\n' | timeout 60s ./paul-envs run --engine podman run-switch-engine bash -c "./test.sh && echo podman-after-rebuild" 2>&1)
+          echo "$RUN_OUTPUT"
+          grep "needs to be re-built: built on a different container engine" <<<"$RUN_OUTPUT"
+          grep "podman-after-rebuild" <<<"$RUN_OUTPUT"
+
+          grep '^CONTAINER_ENGINE=podman$' "$PROJECTS_PATH"/run-switch-engine/.paul-env/project.buildinfo
+          podman image inspect paulenv:run-switch-engine >/dev/null
+
+      - name: Remove with explicit engine only targets that engine
+        shell: bash
+        run: |
+          ./paul-envs create ./test-project --no-prompt --name explicit-remove --shell bash
+          ./paul-envs build --engine docker explicit-remove
+          ./paul-envs build --engine podman explicit-remove
+
+          docker image inspect paulenv:explicit-remove >/dev/null
+          podman image inspect paulenv:explicit-remove >/dev/null
+
+          ./paul-envs remove --no-prompt --engine docker explicit-remove
+
+          test ! -d "$PROJECTS_PATH"/explicit-remove
+          ! docker image inspect paulenv:explicit-remove >/dev/null 2>&1
+          podman image inspect paulenv:explicit-remove >/dev/null
+
+          podman rmi -f paulenv:explicit-remove
+
+      - name: Remove without override uses the last build engine
+        shell: bash
+        run: |
+          ./paul-envs create ./test-project --no-prompt --name default-remove --shell bash
+          ./paul-envs build --engine docker default-remove
+          ./paul-envs build --engine podman default-remove
+
+          docker image inspect paulenv:default-remove >/dev/null
+          podman image inspect paulenv:default-remove >/dev/null
+
+          REMOVE_OUTPUT=$(./paul-envs remove --no-prompt default-remove 2>&1)
+          echo "$REMOVE_OUTPUT"
+          grep "Using the last build engine for 'default-remove': podman." <<<"$REMOVE_OUTPUT"
+
+          test ! -d "$PROJECTS_PATH"/default-remove
+          docker image inspect paulenv:default-remove >/dev/null
+          ! podman image inspect paulenv:default-remove >/dev/null 2>&1
+
+          docker rmi -f paulenv:default-remove
+
   test-shells:
     name: Test shells (${{ matrix.shell }})
     runs-on: ubuntu-latest
