@@ -14,6 +14,9 @@
 - Add `DOTFILES_PATH` to `run.conf` to let user configure where dotfiles are
 - base "dotfiles" can be seeded from e.g. `XDG_CONFIG_HOME/paul-envs/dotfiles`
 - `help` flag per-command
+- Add `--no-prompt` flag to `remove` command
+- Add `--no-prompt` flag to `clean` command
+- Add `--no-cache` flag to `build` command
 
 ### Bug fixes
 

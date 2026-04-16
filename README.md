@@ -235,6 +235,15 @@ paul-envs help
 
 # Uninstall paul-envs completely from your system (remove all projects, config etc.)
 paul-envs clean
+
+# Same cleanup in non-interactive mode, using each step's default answer
+paul-envs clean --no-prompt
+
+# Remove a project without a confirmation prompt
+paul-envs remove --no-prompt myapp
+
+# Force a rebuild without cached layers
+paul-envs build --no-cache myapp
 ```
 
 ### Note: The dotfiles directory
@@ -295,11 +304,8 @@ will be removed when the container is exited).
 
 ## TODO:
 
-- help flag per commands
-- `--no-prompt` flags for `clean` and `remove`...
 - Does cache pruning in `clean` actually do anything?
 - Add ci tests for `clean` command
-- `--no-cache` `build` flag
 - Ask which container engine to use if both podman and docker are available
 - Make `build` / `run` / `remove` / `clean` behavior adaptive if multiple container
   engine are installed: look at the one used at build time etc.
