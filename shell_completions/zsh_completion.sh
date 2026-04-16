@@ -35,6 +35,7 @@ _paulenvs() {
                 create)
                     _arguments \
                         '2:project path:_directories' \
+                        '(-h --help)'{-h,--help}'[Show help]' \
                         '--name[Specify container name]:name:' \
                         '--uid[Host UID]:uid:($(id -u))' \
                         '--gid[Host GID]:gid:($(id -g))' \
@@ -66,29 +67,42 @@ _paulenvs() {
                     ;;
                 list)
                     _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
                         '--names[Only display names]' \
                     ;;
                 build)
                     _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '--no-cache[Build without using cached layers]' \
                         "2:container name:(${containers[@]})"
                     ;;
                 run)
                     _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
                         "2:container name:(${containers[@]})" \
                         '*:command:'
                     ;;
                 remove)
                     _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '--no-prompt[Skip confirmation and require a project name]' \
                         "2:container name:(${containers[@]})"
                     ;;
                 help)
                     # No additional arguments
                     ;;
                 version)
-                    # No additional arguments
+                    _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]'
                     ;;
                 clean)
-                    # No additional arguments
+                    _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '--no-prompt[Apply default answers without prompting]'
+                    ;;
+                interactive)
+                    _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]'
                     ;;
             esac
             ;;

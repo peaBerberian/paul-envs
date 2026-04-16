@@ -9,10 +9,16 @@ _paulenvs()
     local commands="create list build run remove version interactive help clean"
 
     # Options for create command
-    local create_flags="--name --uid --gid --username --shell --nodejs --rust --python --go --git-name --git-email --package --enable-ssh --enable-sudo --neovim --starship --oh-my-posh --atuin --zellij --jujutsu --delta --open-code --claude-code --codex --firefox --no-mise --port --volume"
+    local create_flags="--help --name --uid --gid --username --shell --nodejs --rust --python --go --git-name --git-email --package --enable-ssh --enable-sudo --neovim --starship --oh-my-posh --atuin --zellij --jujutsu --delta --open-code --claude-code --codex --firefox --no-mise --port --volume"
 
     # Options for list command
-    local list_flags="--names"
+    local list_flags="--help --names"
+    local build_flags="--help --no-cache"
+    local remove_flags="--help --no-prompt"
+    local clean_flags="--help --no-prompt"
+    local run_flags="--help"
+    local version_flags="--help"
+    local interactive_flags="--help"
 
     # Get list of existing containers from paul-envs ls
     _get_containers() {
@@ -28,10 +34,6 @@ _paulenvs()
     local command="${COMP_WORDS[1]}"
 
     case "${command}" in
-        interactive)
-            # No further completion
-            return 0
-            ;;
         create)
             case "${prev}" in
                 --uid|--gid)
@@ -77,14 +79,43 @@ _paulenvs()
             COMPREPLY=( $(compgen -W "${list_flags}" -- ${cur}) )
             return 0
             ;;
-        build|run|remove)
-            # Complete with container names
+        build)
             if [[ $COMP_CWORD -eq 2 ]]; then
-                COMPREPLY=( $(compgen -W "$(_get_containers)" -- ${cur}) )
+                COMPREPLY=( $(compgen -W "$(_get_containers) ${build_flags}" -- ${cur}) )
+            elif [[ "${cur}" == --* ]]; then
+                COMPREPLY=( $(compgen -W "${build_flags}" -- ${cur}) )
             fi
             return 0
             ;;
-        help|version|clean)
+        run)
+            if [[ $COMP_CWORD -eq 2 ]]; then
+                COMPREPLY=( $(compgen -W "$(_get_containers) ${run_flags}" -- ${cur}) )
+            elif [[ "${cur}" == --* ]]; then
+                COMPREPLY=( $(compgen -W "${run_flags}" -- ${cur}) )
+            fi
+            return 0
+            ;;
+        remove)
+            if [[ $COMP_CWORD -eq 2 ]]; then
+                COMPREPLY=( $(compgen -W "$(_get_containers) ${remove_flags}" -- ${cur}) )
+            elif [[ "${cur}" == --* ]]; then
+                COMPREPLY=( $(compgen -W "${remove_flags}" -- ${cur}) )
+            fi
+            return 0
+            ;;
+        version)
+            COMPREPLY=( $(compgen -W "${version_flags}" -- ${cur}) )
+            return 0
+            ;;
+        interactive)
+            COMPREPLY=( $(compgen -W "${interactive_flags}" -- ${cur}) )
+            return 0
+            ;;
+        clean)
+            COMPREPLY=( $(compgen -W "${clean_flags}" -- ${cur}) )
+            return 0
+            ;;
+        help)
             # No further completion
             return 0
             ;;

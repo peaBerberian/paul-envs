@@ -45,8 +45,20 @@ complete -c paul-envs -n "__fish_seen_subcommand_from create" -l firefox -d "Ins
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l no-mise -d "Prevent Mise installation" -f
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l port -d 'Expose port' -x
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l volume -d 'Add volume' -r
+complete -c paul-envs -n "__fish_seen_subcommand_from create" -l help -s h -d 'Show help' -f
 
 complete -c paul-envs -n "__fish_seen_subcommand_from list" -l names -d "Only display names" -f
+complete -c paul-envs -n "__fish_seen_subcommand_from list" -l help -s h -d 'Show help' -f
+
+complete -c paul-envs -n "__fish_seen_subcommand_from build" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from build" -l no-cache -d 'Build without using cached layers' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from run" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from remove" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from remove" -l no-prompt -d 'Skip confirmation and require a project name' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from version" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from interactive" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l no-prompt -d 'Apply default answers without prompting' -f
 
 # Container name completion for build, run, remove
 complete -c paul-envs -f -n "__fish_seen_subcommand_from build" -a '(__paul_envs_containers)'
