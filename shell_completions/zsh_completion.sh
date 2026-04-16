@@ -98,7 +98,8 @@ _paulenvs() {
                 clean)
                     _arguments \
                         '(-h --help)'{-h,--help}'[Show help]' \
-                        '--no-prompt[Apply default answers without prompting]'
+                        '--no-prompt[Apply default answers without prompting]' \
+                        '--engine[Container engine to clean]:engine:(docker podman all)'
                     ;;
                 interactive)
                     _arguments \

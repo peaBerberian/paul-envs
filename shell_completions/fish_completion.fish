@@ -59,6 +59,7 @@ complete -c paul-envs -n "__fish_seen_subcommand_from version" -l help -s h -d '
 complete -c paul-envs -n "__fish_seen_subcommand_from interactive" -l help -s h -d 'Show help' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l help -s h -d 'Show help' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l no-prompt -d 'Apply default answers without prompting' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l engine -d 'Container engine to clean' -xa 'docker podman all'
 
 # Container name completion for build, run, remove
 complete -c paul-envs -f -n "__fish_seen_subcommand_from build" -a '(__paul_envs_containers)'

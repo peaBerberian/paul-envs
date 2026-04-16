@@ -36,7 +36,7 @@ func Interactive(ctx context.Context, args []string, fs *files.FileStore, c *con
 		c.WriteLn("  4. run     - Run a container based on a built image")
 		c.WriteLn("  5. remove  - Remove a configuration and its data")
 		c.WriteLn("  6. version - Show the current version")
-		c.WriteLn("  7. clean   - Remove all stored paul-envs data from your computer")
+		c.WriteLn("  7. clean   - Remove stored paul-envs data and container assets")
 		c.WriteLn("  8. exit    - Exit interactive mode")
 		c.WriteLn("")
 

@@ -388,6 +388,10 @@ func (c *DockerEngine) PruneBuildCache(ctx context.Context) error {
 	return nil
 }
 
+func (c *DockerEngine) SupportsBuildCachePrune() bool {
+	return true
+}
+
 func (c *DockerEngine) ListImages(ctx context.Context) ([]ImageInfo, error) {
 	cmd := exec.CommandContext(ctx, "docker", "images", "--filter", "reference=paulenv:*", "--format", "{{.Repository}}:{{.Tag}}\t{{.CreatedAt}}")
 	output, err := cmd.Output()

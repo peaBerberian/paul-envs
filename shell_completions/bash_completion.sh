@@ -15,7 +15,8 @@ _paulenvs()
     local list_flags="--help --names"
     local build_flags="--help --no-cache"
     local remove_flags="--help --no-prompt"
-    local clean_flags="--help --no-prompt"
+    local clean_flags="--help --no-prompt --engine"
+    local engine_values="docker podman all"
     local run_flags="--help"
     local version_flags="--help"
     local interactive_flags="--help"
@@ -112,7 +113,11 @@ _paulenvs()
             return 0
             ;;
         clean)
-            COMPREPLY=( $(compgen -W "${clean_flags}" -- ${cur}) )
+            if [[ "${prev}" == --engine ]]; then
+                COMPREPLY=( $(compgen -W "${engine_values}" -- ${cur}) )
+            else
+                COMPREPLY=( $(compgen -W "${clean_flags}" -- ${cur}) )
+            fi
             return 0
             ;;
         help)

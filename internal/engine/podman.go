@@ -396,6 +396,10 @@ func (c *PodmanEngine) PruneBuildCache(ctx context.Context) error {
 	return nil
 }
 
+func (c *PodmanEngine) SupportsBuildCachePrune() bool {
+	return false
+}
+
 func (c *PodmanEngine) ListImages(ctx context.Context) ([]ImageInfo, error) {
 	cmd := exec.CommandContext(ctx, "podman", "images", "--format", "{{.Repository}}:{{.Tag}}\t{{.CreatedAt}}")
 	output, err := cmd.Output()

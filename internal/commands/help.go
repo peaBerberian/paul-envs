@@ -33,7 +33,7 @@ Commands:
   version      Show paul-envs and container engine versions
   help         Show global or per-command help
   interactive  Start the guided interactive flow
-  clean        Remove project/config/container data
+  clean        Remove stored paul-envs data and container assets
 
 Run 'paul-envs <command> --help' for command-specific flags and examples.
 `)

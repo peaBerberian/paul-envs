@@ -61,6 +61,9 @@ type ContainerEngine interface {
 	// Remove the `ContainerEngine`'s build cache from metadata linked to this
 	// executable
 	PruneBuildCache(ctx context.Context) error
+	// Return whether scoped builder cache pruning is meaningfully supported for
+	// this engine.
+	SupportsBuildCachePrune() bool
 }
 
 type BuildOptions struct {
@@ -75,6 +78,15 @@ type EngineInfo struct {
 	// /!\ Should fit on a single line
 	Version string
 }
+
+type Selection string
+
+const (
+	SelectionAuto   Selection = ""
+	SelectionDocker Selection = "docker"
+	SelectionPodman Selection = "podman"
+	SelectionAll    Selection = "all"
+)
 
 // Information on a particular built image
 type ImageInfo struct {
@@ -119,19 +131,62 @@ type VolumeInfo struct {
 
 // Create a new `ContainerEngine`, based on what's available right now.
 func New(ctx context.Context, console *console.Console) (ContainerEngine, error) {
-	podman, podmanErr := newPodman(ctx)
-	_, dockerErr := newDocker(ctx)
+	return NewSelected(ctx, console, SelectionAuto)
+}
 
-	if podmanErr == nil {
+// Create a new `ContainerEngine` based on the requested engine selection.
+func NewSelected(ctx context.Context, console *console.Console, selection Selection) (ContainerEngine, error) {
+	podman, podmanErr := newPodman(ctx)
+	docker, dockerErr := newDocker(ctx)
+
+	switch selection {
+	case SelectionAuto:
+		if podmanErr == nil {
+			if dockerErr == nil {
+				console.Info("Both Podman and Docker are available; relying on Podman.")
+			}
+			return podman, nil
+		}
 		if dockerErr == nil {
-			// Both are available — warn so the user isn't surprised
-			// TODO:  Set PAUL_ENVS_ENGINE=docker to override.
-			console.Info("Both Podman and Docker are available; relying on Podman.")
+			return docker, nil
+		}
+		return nil, fmt.Errorf("no supported container engine found, please install podman or docker first")
+	case SelectionPodman:
+		if podmanErr != nil {
+			return nil, fmt.Errorf("requested engine %q is not available: %w", SelectionPodman, podmanErr)
 		}
 		return podman, nil
-	}
-	if docker, err := newDocker(ctx); err == nil {
+	case SelectionDocker:
+		if dockerErr != nil {
+			return nil, fmt.Errorf("requested engine %q is not available: %w", SelectionDocker, dockerErr)
+		}
 		return docker, nil
+	default:
+		return nil, fmt.Errorf("invalid container engine selection %q", selection)
 	}
-	return nil, fmt.Errorf("no supported container engine found, please install podman or docker first")
+}
+
+// Create a list of container engines based on the requested selection.
+func NewSet(ctx context.Context, console *console.Console, selection Selection) ([]ContainerEngine, error) {
+	if selection != SelectionAll {
+		engine, err := NewSelected(ctx, console, selection)
+		if err != nil {
+			return nil, err
+		}
+		return []ContainerEngine{engine}, nil
+	}
+
+	engines := []ContainerEngine{}
+	podman, podmanErr := newPodman(ctx)
+	if podmanErr == nil {
+		engines = append(engines, podman)
+	}
+	docker, dockerErr := newDocker(ctx)
+	if dockerErr == nil {
+		engines = append(engines, docker)
+	}
+	if len(engines) == 0 {
+		return nil, fmt.Errorf("no supported container engine found, please install podman or docker first")
+	}
+	return engines, nil
 }
