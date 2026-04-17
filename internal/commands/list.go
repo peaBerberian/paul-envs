@@ -5,6 +5,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/peaberberian/paul-envs/internal/console"
 	"github.com/peaberberian/paul-envs/internal/engine"
@@ -43,21 +45,13 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 			console.WriteLn(entry.ProjectName)
 		}
 	} else {
-		containerEngine, err := engine.New(ctx, console)
-		if err != nil {
-			console.Warn("Could not instantiate container engine: %w", err)
-		}
+		engineCache := map[engine.Selection]engine.ContainerEngine{}
+		var allEngines []engine.ContainerEngine
 
-		var lastImageInfoWarning error = nil
 		for _, entry := range entries {
-			var imageInfo *engine.ImageInfo
-			if containerEngine == nil {
-				imageInfo = nil
-			} else {
-				imageInfo, err = containerEngine.GetImageInfo(ctx, entry.ProjectName)
-				if err != nil {
-					lastImageInfoWarning = err
-				}
+			imageInfo, warnErr := listProjectImageInfo(ctx, entry.ProjectName, filestore, console, engineCache, &allEngines)
+			if warnErr != nil {
+				console.Warn("Could not obtain image info for project '%s': %s", entry.ProjectName, warnErr)
 			}
 			printProjectInfo(entry, imageInfo, console)
 		}
@@ -66,11 +60,71 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 		} else {
 			console.WriteLn("Total: %d projects", len(entries))
 		}
-		if lastImageInfoWarning != nil {
-			console.Warn("Could not obtain image info for some project(s): %s", err)
-		}
 	}
 	return nil
+}
+
+func listProjectImageInfo(
+	ctx context.Context,
+	projectName string,
+	filestore *files.FileStore,
+	console *console.Console,
+	engineCache map[engine.Selection]engine.ContainerEngine,
+	allEngines *[]engine.ContainerEngine,
+) (*engine.ImageInfo, error) {
+	selectedEngine, err := listProjectEngineSelection(projectName, filestore)
+	if err != nil {
+		return nil, err
+	}
+
+	if selectedEngine != engine.SelectionAuto {
+		containerEngine, ok := engineCache[selectedEngine]
+		if !ok {
+			containerEngine, err = engine.NewSelected(ctx, console, selectedEngine)
+			if err != nil {
+				return nil, err
+			}
+			engineCache[selectedEngine] = containerEngine
+		}
+		return containerEngine.GetImageInfo(ctx, projectName)
+	}
+
+	if *allEngines == nil {
+		engines, err := engine.NewSet(ctx, console, engine.SelectionAll)
+		if err != nil {
+			return nil, err
+		}
+		*allEngines = engines
+	}
+
+	var lastErr error
+	for _, containerEngine := range *allEngines {
+		imageInfo, err := containerEngine.GetImageInfo(ctx, projectName)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if imageInfo != nil {
+			return imageInfo, lastErr
+		}
+	}
+	return nil, lastErr
+}
+
+func listProjectEngineSelection(projectName string, filestore *files.FileStore) (engine.Selection, error) {
+	lastBuildEngine, err := filestore.GetBuildEngineSelection(projectName)
+	if err != nil {
+		if os.IsNotExist(err) || strings.Contains(err.Error(), "could not open 'project.buildinfo'") {
+			return engine.SelectionAuto, nil
+		}
+		return engine.SelectionAuto, fmt.Errorf("could not determine the last build engine: %w", err)
+	}
+
+	selected, err := parseCommandEngineSelection(lastBuildEngine)
+	if err != nil {
+		return engine.SelectionAuto, fmt.Errorf("ignoring invalid build engine recorded in project metadata: %w", err)
+	}
+	return selected, nil
 }
 
 func printProjectInfo(projectEntry files.ProjectEntry, imageInfo *engine.ImageInfo, console *console.Console) bool {
