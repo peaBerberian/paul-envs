@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/peaberberian/paul-envs/internal/console"
+	"github.com/peaberberian/paul-envs/internal/engine"
 	"github.com/peaberberian/paul-envs/internal/files"
 	"github.com/peaberberian/paul-envs/internal/utils"
 )
@@ -95,49 +96,36 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 		return fmt.Errorf("failed to obtain information on project '%s': %w", name, err)
 	}
 
-	hasBeenBuilt, err := containerEngine.HasBeenBuilt(ctx, project.ProjectName)
+	builtForRun := false
+	needsRebuild, reason, err := runRebuildDecision(ctx, project.ProjectName, filestore, containerEngine)
 	if err != nil {
-		return fmt.Errorf("failed to get the status of the '%s' project: %w", project.ProjectName, err)
-	}
-	if !hasBeenBuilt {
-		console.WriteLn("The '%s' project has not been built yet", project.ProjectName)
+		console.Warn("Cannot check previous build metadata: %s", err)
+	} else if needsRebuild {
+		console.WriteLn("The '%s' project needs to be re-built: %s", project.ProjectName, reason)
 		choice, err := console.AskYesNo("Do you want to build it first?", true)
-		if err != nil || !choice {
-			return fmt.Errorf("please run 'paul-envs build %s' first", project.ProjectName)
-		}
-		if err = Build(ctx, buildArgsForEngine(project.ProjectName, selectedEngine), filestore, console); err != nil {
-			return fmt.Errorf("did not succeed to build project: %w", err)
+		if err != nil || choice {
+			if err = Build(ctx, buildArgsForEngine(project.ProjectName, selectedEngine), filestore, console); err != nil {
+				return fmt.Errorf("did not succeed to build project: %w", err)
+			}
+			builtForRun = true
 		}
 	}
 
-	buildInfo, err := filestore.ReadBuildInfo(project.ProjectName)
-	if err != nil {
-		console.Warn("Could not get the information from a precedent build: %s", err)
-	} else if buildInfo == nil {
-		console.Warn("NIL BUILD INFO")
-	} else {
-		currentEngineName := ""
-		engineInfo, err := containerEngine.Info(ctx)
+	if !builtForRun {
+		hasBeenBuilt, err := containerEngine.HasBeenBuilt(ctx, project.ProjectName)
 		if err != nil {
-			console.Warn("Cannot get current container engine info: %s", err)
-		} else {
-			currentEngineName = engineInfo.Name
+			return fmt.Errorf("failed to get the status of the '%s' project: %w", project.ProjectName, err)
 		}
-
-		needsRebuild, reason, err := filestore.NeedsRebuild(project.ProjectName, currentEngineName, buildInfo)
-		if err != nil {
-			console.Warn("Cannot check previous build metadata: %s", err)
-		}
-		if needsRebuild {
-			console.WriteLn("The '%s' project needs to be re-built: %s", project.ProjectName, reason)
+		if !hasBeenBuilt {
+			console.WriteLn("The '%s' project has not been built yet", project.ProjectName)
 			choice, err := console.AskYesNo("Do you want to build it first?", true)
-			if err != nil || choice {
-				if err = Build(ctx, buildArgsForEngine(project.ProjectName, selectedEngine), filestore, console); err != nil {
-					return fmt.Errorf("did not succeed to build project: %w", err)
-				}
+			if err != nil || !choice {
+				return fmt.Errorf("please run 'paul-envs build %s' first", project.ProjectName)
+			}
+			if err = Build(ctx, buildArgsForEngine(project.ProjectName, selectedEngine), filestore, console); err != nil {
+				return fmt.Errorf("did not succeed to build project: %w", err)
 			}
 		}
-
 	}
 
 	containerList, err := containerEngine.ListContainers(ctx)
@@ -159,4 +147,26 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 	}
 	console.Info("Exiting leader container for that project, those that have joined it will also exit.")
 	return nil
+}
+
+func runRebuildDecision(
+	ctx context.Context,
+	projectName string,
+	filestore *files.FileStore,
+	containerEngine engine.ContainerEngine,
+) (bool, files.RebuildReason, error) {
+	buildInfo, err := filestore.ReadBuildInfo(projectName)
+	if err != nil {
+		return false, files.RebuildNotNeeded, err
+	}
+	if buildInfo == nil {
+		return false, files.RebuildNotNeeded, nil
+	}
+
+	engineInfo, err := containerEngine.Info(ctx)
+	if err != nil {
+		return false, files.RebuildNotNeeded, err
+	}
+
+	return filestore.NeedsRebuild(projectName, engineInfo.Name, buildInfo)
 }
