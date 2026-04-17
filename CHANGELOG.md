@@ -24,7 +24,9 @@
 - Add `--config` flag to `clean` command
 - Add `--managed-resources` flag to `clean` command
 - Add `--build-cache` flag to `clean` command
+- Add `completion` command to generate shell autocompletion (for `bash`, `zsh` and `fish` for now)
 - `help` flag per-command
+- `list` now considers all engines
 - More resilient Dockerfile when firefox installation fails
 
 ### Bug fixes

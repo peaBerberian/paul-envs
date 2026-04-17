@@ -311,7 +311,7 @@ will be removed when the container is exited).
 
 ## TODO:
 
-- `list`: Should it also indicate if active? Should it poll all container engines?
+- `list`: Should it also indicate if active?
 - `kill` command?
 - `up` command?
 - Add `kakoune` and `helix` as potential in-container editors
