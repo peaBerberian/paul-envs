@@ -308,13 +308,3 @@ will be removed when the container is exited).
 
 - **Ephemeral**: All other changes (further installed global packages, global
   system configurations etc.)
-
-## TODO:
-
-- `list`: Should it also indicate if active?
-- `kill` command?
-- `up` command?
-- Add `kakoune` and `helix` as potential in-container editors
-- less gh-action scripts, more shell scripts
-- Kill containers on same image on build?
-- Reference counted container instead of master/slaves
