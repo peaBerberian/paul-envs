@@ -26,10 +26,11 @@ var Version = utils.Version{
 //   - 1.5.0: Set envs (XDG_* etc.) in global shellrc confs, so it's available in login shells
 //   - 2.0.0: Replace per-project compose/env files with build.conf/run.conf
 //   - 2.1.0: Move dotfiles sync, git identity, and managed shell overrides to container start
+//   - 2.1.1: Install Codex through its standalone installer so its complete package is available
 var DockerfileVersion = utils.Version{
 	Major: 2,
 	Minor: 1,
-	Patch: 0,
+	Patch: 1,
 }
 
 // Format of generated build.conf files.

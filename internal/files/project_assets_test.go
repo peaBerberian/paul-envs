@@ -138,3 +138,25 @@ func TestFileStore_CreateProjectFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestEmbeddedDockerfileCodexInstaller(t *testing.T) {
+	dockerfile, err := assets.ReadFile("embeds/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(dockerfile)
+	header := "# Dockerfile - Version: " + versions.DockerfileVersion.ToString()
+	if !strings.Contains(content, header) {
+		t.Errorf("embedded Dockerfile missing version header %q", header)
+	}
+	if !strings.Contains(content, "curl -fsSL https://chatgpt.com/codex/install.sh | sh") {
+		t.Error("embedded Dockerfile does not use the Codex standalone installer")
+	}
+	if !strings.Contains(content, "export CODEX_HOME=/home/${USERNAME}/.local/share/codex-cli") {
+		t.Error("embedded Dockerfile does not keep the Codex CLI package outside persistent runtime state")
+	}
+	if strings.Contains(content, "github.com/openai/codex/releases/download") {
+		t.Error("embedded Dockerfile still downloads the incomplete Codex release binary")
+	}
+}
