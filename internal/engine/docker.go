@@ -122,6 +122,7 @@ func (c *DockerEngine) RunContainer(ctx context.Context, project files.ProjectEn
 
 	if term.IsTerminal(int(os.Stdin.Fd())) {
 		cmdArgs = append(cmdArgs, "--tty", "--interactive")
+		cmdArgs = append(cmdArgs, containerTerminalEnvArgs(os.Getenv("TERM"), os.Getenv("COLORTERM"))...)
 	}
 
 	cmdArgs = append(cmdArgs, projectImageName(project.ProjectName))
@@ -144,6 +145,7 @@ func (c *DockerEngine) JoinContainer(ctx context.Context, containerInfo Containe
 	cmdArgs := []string{"exec"}
 	if term.IsTerminal(int(os.Stdin.Fd())) {
 		cmdArgs = append(cmdArgs, "-it")
+		cmdArgs = append(cmdArgs, containerTerminalEnvArgs(os.Getenv("TERM"), os.Getenv("COLORTERM"))...)
 	}
 	cmdArgs = append(cmdArgs, containerInfo.ContainerId, "/usr/local/bin/entrypoint.sh")
 	cmdArgs = append(cmdArgs, args...)
