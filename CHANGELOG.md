@@ -1,10 +1,6 @@
 # Changelog
 
-## Unreleased
-
-### Features
-
-- Install `unzip` and `ripgrep` by default
+## v0.8.1 (2026-10-02)
 
 ### Bug fixes
 
@@ -12,6 +8,10 @@
 - Use Corepack for Yarn so projects can select Yarn Classic or Berry through `packageManager`
 - When asked, now install Codex with its new standalone installer instead of the previous fetch-from-github solution
 - Update to the new official install commands and URLs for Atuin, mise, and Jujutsu
+
+### Improvements
+
+- Add `unzip` and `ripgrep` to the default installed packages on new images (too useful to make optional)
 
 ## v0.8.0 (2026-04-19)
 
