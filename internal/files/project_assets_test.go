@@ -169,7 +169,7 @@ func TestEmbeddedDockerfileCurrentToolInstallers(t *testing.T) {
 
 	content := string(dockerfile)
 	expected := []string{
-		"curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh",
+		"curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh -s -- --non-interactive",
 		"curl -fsSL https://mise.run | sh",
 		"https://github.com/jj-vcs/jj/releases/download/",
 	}

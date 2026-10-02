@@ -241,7 +241,7 @@ RUN if [ "$INSTALL_CODEX" = "true" ]; then \
   fi
 
 RUN if [ "$INSTALL_ATUIN" = "true" ]; then \
-    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh; \
+    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh -s -- --non-interactive; \
   fi
 
 # Install `mise` + languages (optional)
