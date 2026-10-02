@@ -857,6 +857,24 @@ jobs:
             exit 1
           fi
 
+      - name: Test Yarn Classic and Berry compatibility
+        shell: bash
+        run: |
+          timeout 120s ./paul-envs run full-build bash -c '
+            set -eu
+
+            CLASSIC_DIR=$(mktemp -d)
+            BERRY_DIR=$(mktemp -d)
+            trap "rm -rf \"$CLASSIC_DIR\" \"$BERRY_DIR\"" EXIT
+
+            printf "%s\n" "{\"packageManager\":\"yarn@1.22.22\"}" > "$CLASSIC_DIR/package.json"
+            printf "%s\n" "{\"packageManager\":\"yarn@4.18.0\"}" > "$BERRY_DIR/package.json"
+
+            test "$(cd "$CLASSIC_DIR" && yarn --version)" = "1.22.22"
+            test "$(cd "$BERRY_DIR" && yarn --version)" = "4.18.0"
+          '
+          echo "✓ Yarn Classic and Berry compatibility passed"
+
       - name: Prepare runtime dotfiles fixtures
         shell: bash
         run: |

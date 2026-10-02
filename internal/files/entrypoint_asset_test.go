@@ -23,6 +23,8 @@ func TestEmbeddedEntrypointContainsRuntimeManagement(t *testing.T) {
 		"paul-envs managed fish overrides",
 		"git config --global user.name",
 		"git config --global user.email",
+		`export COREPACK_HOME="${HOME_DIR}/.container-cache/corepack"`,
+		"set -gx COREPACK_HOME ${HOME_DIR}/.container-cache/corepack",
 	}
 	for _, check := range checks {
 		if !strings.Contains(script, check) {

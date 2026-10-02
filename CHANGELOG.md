@@ -9,6 +9,7 @@
 ### Bug fixes
 
 - Preserve the host terminal's color capabilities in interactive containers
+- Use Corepack for Yarn so projects can select Yarn Classic or Berry through `packageManager`
 - When asked, now install Codex with its new standalone installer instead of the previous fetch-from-github solution
 - Update to the new official install commands and URLs for Atuin, mise, and Jujutsu
 

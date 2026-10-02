@@ -60,6 +60,7 @@ export XDG_DATA_HOME="${HOME_DIR}/.container-local/data"
 export _ZO_DATA_DIR="${HOME_DIR}/.container-local/zoxide"
 export STARSHIP_CACHE="${HOME_DIR}/.container-local/starship"
 export ATUIN_DB_PATH="${HOME_DIR}/.container-local/atuin/history.db"
+export COREPACK_HOME="${HOME_DIR}/.container-cache/corepack"
 export HISTFILE="${HOME_DIR}/.container-local/.bash_history"
 export PIP_CACHE_DIR="\$HOME/.container-cache/pip"
 export GOPATH="\$HOME/.container-local/gopath"
@@ -89,6 +90,7 @@ export XDG_DATA_HOME="${HOME_DIR}/.container-local/data"
 export _ZO_DATA_DIR="${HOME_DIR}/.container-local/zoxide"
 export STARSHIP_CACHE="${HOME_DIR}/.container-local/starship"
 export ATUIN_DB_PATH="${HOME_DIR}/.container-local/atuin/history.db"
+export COREPACK_HOME="${HOME_DIR}/.container-cache/corepack"
 export HISTFILE="${HOME_DIR}/.container-local/.zsh_history"
 export PIP_CACHE_DIR="\$HOME/.container-cache/pip"
 export GOPATH="\$HOME/.container-local/gopath"
@@ -118,6 +120,7 @@ set -gx XDG_DATA_HOME ${HOME_DIR}/.container-local/data
 set -gx _ZO_DATA_DIR ${HOME_DIR}/.container-local/zoxide
 set -gx STARSHIP_CACHE ${HOME_DIR}/.container-local/starship
 set -gx ATUIN_DB_PATH ${HOME_DIR}/.container-local/atuin/history.db
+set -gx COREPACK_HOME ${HOME_DIR}/.container-cache/corepack
 set -gx PIP_CACHE_DIR \$HOME/.container-cache/pip
 set -gx GOPATH \$HOME/.container-local/gopath
 set -gx GOMODCACHE \$HOME/.container-cache/go/mod

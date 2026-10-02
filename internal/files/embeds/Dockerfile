@@ -91,7 +91,8 @@ ARG ENABLE_SUDO=false
 # Set all the right envs to the persisted storages just to be sure
 ENV _ZO_DATA_DIR=/home/${USERNAME}/.container-local/zoxide \
     STARSHIP_CACHE=/home/${USERNAME}/.container-local/starship \
-    ATUIN_DB_PATH=/home/${USERNAME}/.container-local/atuin/history.db
+    ATUIN_DB_PATH=/home/${USERNAME}/.container-local/atuin/history.db \
+    COREPACK_HOME=/home/${USERNAME}/.container-cache/corepack
 
 USER root
 
@@ -312,18 +313,27 @@ USER ${USERNAME}
 
 # Set-up language envs
 RUN if [ -n "$INSTALL_NODE" ] && [ "$INSTALL_NODE" != "none" ]; then \
-      # Setup dirs and add yarn globally, just in case
-      if [ "$INSTALL_MISE" != "true" ]; then \
-        npm config set prefix "/home/${USERNAME}/.local" && \
-        npm config set cache /home/${USERNAME}/.container-cache/.npm && \
-        npm install -g yarn && \
-        yarn config set cacheFolder /home/${USERNAME}/.container-cache/.yarn; \
-      else \
-        export PATH="/home/${USERNAME}/.local/bin:$PATH" && \
-        mise exec -- npm config set prefix "/home/${USERNAME}/.local" && \
-        mise exec -- npm config set cache /home/${USERNAME}/.container-cache/.npm && \
-        mise exec -- npm install -g yarn && \
-        mise exec -- yarn config set cacheFolder /home/${USERNAME}/.container-cache/.yarn; \
+      export PATH="/home/${USERNAME}/.local/bin:$PATH"; \
+      if [ "$INSTALL_MISE" = "true" ]; then \
+        NODE_BIN_DIR="$(dirname "$(mise which node)")" && \
+        export PATH="${NODE_BIN_DIR}:$PATH"; \
+      fi; \
+      npm config set prefix "/home/${USERNAME}/.local" && \
+      npm config set cache /home/${USERNAME}/.container-cache/.npm && \
+      NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')" && \
+      if ! command -v corepack >/dev/null 2>&1; then \
+        if [ "$NODE_MAJOR" -lt 18 ]; then \
+          npm install -g yarn; \
+        elif [ "$NODE_MAJOR" -eq 18 ]; then \
+          npm install -g corepack@0.33.0; \
+        elif [ "$NODE_MAJOR" -eq 25 ]; then \
+          npm install -g corepack@0.34.7; \
+        else \
+          npm install -g corepack@latest; \
+        fi; \
+      fi; \
+      if command -v corepack >/dev/null 2>&1; then \
+        corepack enable --install-directory "/home/${USERNAME}/.local/bin" yarn; \
       fi; \
     fi; \
     if [ -n "$INSTALL_RUST" ] && [ "$INSTALL_RUST" != "none" ]; then \

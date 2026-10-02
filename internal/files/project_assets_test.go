@@ -203,3 +203,31 @@ func TestEmbeddedDockerfileBasePackages(t *testing.T) {
 		}
 	}
 }
+
+func TestEmbeddedDockerfileYarnCompatibility(t *testing.T) {
+	dockerfile, err := assets.ReadFile("embeds/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(dockerfile)
+	expected := []string{
+		"COREPACK_HOME=/home/${USERNAME}/.container-cache/corepack",
+		"corepack enable --install-directory \"/home/${USERNAME}/.local/bin\" yarn",
+	}
+	for _, value := range expected {
+		if !strings.Contains(content, value) {
+			t.Errorf("embedded Dockerfile missing Yarn compatibility setup %q", value)
+		}
+	}
+
+	obsolete := []string{
+		"npm install -g yarn &&",
+		"yarn config set cacheFolder",
+	}
+	for _, value := range obsolete {
+		if strings.Contains(content, value) {
+			t.Errorf("embedded Dockerfile still uses incompatible Yarn setup %q", value)
+		}
+	}
+}
