@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Install `unzip` and `ripgrep` by default
+
 ### Bug fixes
 
 - When asked, now install Codex with its new standalone installer instead of the previous fetch-from-github solution

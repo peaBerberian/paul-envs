@@ -189,3 +189,17 @@ func TestEmbeddedDockerfileCurrentToolInstallers(t *testing.T) {
 		}
 	}
 }
+
+func TestEmbeddedDockerfileBasePackages(t *testing.T) {
+	dockerfile, err := assets.ReadFile("embeds/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(dockerfile)
+	for _, packageLine := range []string{"  unzip \\\n", "  ripgrep \\\n"} {
+		if !strings.Contains(content, packageLine) {
+			t.Errorf("embedded Dockerfile missing base package line %q", packageLine)
+		}
+	}
+}

@@ -1087,10 +1087,10 @@ func promptPackages(cons *console.Console) ([]string, error) {
 	for {
 		cons.Info("=== Additional Packages ===")
 		cons.WriteLn("The following packages are already installed on top of an Ubuntu:24.04 image:")
-		cons.WriteLn("curl git build-essential")
+		cons.WriteLn("curl git build-essential unzip ripgrep")
 		cons.WriteLn("")
 		cons.WriteLn("Enter additional Ubuntu packages (space-separated, or Enter to skip):")
-		cons.WriteLn("Examples: ripgrep fzf htop")
+		cons.WriteLn("Examples: fzf htop")
 
 		input, err := cons.AskString("Packages", "")
 		if err != nil {
