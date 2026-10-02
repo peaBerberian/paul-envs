@@ -174,7 +174,7 @@ RUN if [ "$INSTALL_JUJUTSU" = "true" ]; then \
         echo "Unsupported architecture: $ARCH" && exit 1; \
     fi && \
     JJ_VERSION=$(curl -s https://api.github.com/repos/jj-vcs/jj/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"//;s/"//') && \
-    curl -L "https://github.com/martinvonz/jj/releases/download/${JJ_VERSION}/jj-${JJ_VERSION}-${JJ_ARCH}.tar.gz" -o jj.tar.gz && \
+    curl -L "https://github.com/jj-vcs/jj/releases/download/${JJ_VERSION}/jj-${JJ_VERSION}-${JJ_ARCH}.tar.gz" -o jj.tar.gz && \
     tar -xzf jj.tar.gz && \
     mv jj /usr/local/bin/ && \
     chmod +x /usr/local/bin/jj && \
@@ -241,12 +241,12 @@ RUN if [ "$INSTALL_CODEX" = "true" ]; then \
   fi
 
 RUN if [ "$INSTALL_ATUIN" = "true" ]; then \
-    curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh | bash; \
+    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh -s -- --non-interactive; \
   fi
 
 # Install `mise` + languages (optional)
 RUN if [ "$INSTALL_MISE" = "true" ]; then \
-    curl https://mise.jdx.dev/install.sh | sh && \
+    curl -fsSL https://mise.run | sh && \
     export PATH="/home/${USERNAME}/.local/bin:$PATH"; \
     if [ -n "$INSTALL_NODE" ] && [ "$INSTALL_NODE" != "none" ]; then \
       mise install node@${INSTALL_NODE} && mise use -g node@${INSTALL_NODE}; \

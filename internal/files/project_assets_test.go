@@ -160,3 +160,32 @@ func TestEmbeddedDockerfileCodexInstaller(t *testing.T) {
 		t.Error("embedded Dockerfile still downloads the incomplete Codex release binary")
 	}
 }
+
+func TestEmbeddedDockerfileCurrentToolInstallers(t *testing.T) {
+	dockerfile, err := assets.ReadFile("embeds/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(dockerfile)
+	expected := []string{
+		"curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh -s -- --non-interactive",
+		"curl -fsSL https://mise.run | sh",
+		"https://github.com/jj-vcs/jj/releases/download/",
+	}
+	for _, value := range expected {
+		if !strings.Contains(content, value) {
+			t.Errorf("embedded Dockerfile missing current installer %q", value)
+		}
+	}
+
+	obsolete := []string{
+		"https://mise.jdx.dev/install.sh",
+		"https://github.com/martinvonz/jj/releases/download/",
+	}
+	for _, value := range obsolete {
+		if strings.Contains(content, value) {
+			t.Errorf("embedded Dockerfile still uses obsolete installer %q", value)
+		}
+	}
+}

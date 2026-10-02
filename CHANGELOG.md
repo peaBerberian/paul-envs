@@ -5,6 +5,7 @@
 ### Bug fixes
 
 - When asked, now install Codex with its new standalone installer instead of the previous fetch-from-github solution
+- Update to the new official install commands and URLs for Atuin, mise, and Jujutsu
 
 ## v0.8.0 (2026-04-19)
 
