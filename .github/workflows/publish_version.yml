@@ -42,6 +42,14 @@ jobs:
       - name: Build in release mode
         run: make release
 
+      - name: Check tag matches application version
+        run: |
+          version=$(./dist/release/paul-envs-linux-amd64 version --short)
+          if [[ "${GITHUB_REF_NAME%-dev.*}" != "v$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match application version $version."
+            exit 1
+          fi
+
       - name: Extract changelog for this version
         id: changelog
         run: |
