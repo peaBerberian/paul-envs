@@ -94,7 +94,9 @@ func (c *PodmanEngine) RunContainer(ctx context.Context, project files.ProjectEn
 
 	cmdArgs := []string{"run"}
 	if shouldUsePodmanKeepID() {
-		cmdArgs = append(cmdArgs, "--userns=keep-id")
+		// Podman 6.2+ overrides the image USER with keep-id; the entrypoint needs
+		// container root before switching to the development user.
+		cmdArgs = append(cmdArgs, "--userns=keep-id", "--user", "0:0")
 	}
 	cmdArgs = append(cmdArgs,
 		"--rm",

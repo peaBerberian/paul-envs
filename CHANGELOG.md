@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Bug fixes
+
+- Fix containers asking for a password at startup with Podman 6.2+.
+
 ## v0.8.1 (2026-10-02)
 
 ### Bug fixes
