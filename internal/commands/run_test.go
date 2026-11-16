@@ -29,6 +29,14 @@ func (s *stubEngine) JoinContainer(context.Context, engine.ContainerInfo, []stri
 	return nil
 }
 
+func (s *stubEngine) StopContainer(context.Context, engine.ContainerInfo, engine.StopOptions) error {
+	return nil
+}
+
+func (s *stubEngine) KillContainer(context.Context, engine.ContainerInfo) error {
+	return nil
+}
+
 func (s *stubEngine) CreateVolume(context.Context, string) error {
 	return nil
 }

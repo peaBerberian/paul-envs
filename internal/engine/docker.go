@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -158,6 +159,35 @@ func (c *DockerEngine) JoinContainer(ctx context.Context, containerInfo Containe
 			return pErr
 		}
 		return fmt.Errorf("join exited: %w", err)
+	}
+	return nil
+}
+
+func (c *DockerEngine) StopContainer(ctx context.Context, containerInfo ContainerInfo, options StopOptions) error {
+	args := []string{"stop"}
+	if options.Timeout != nil {
+		args = append(args, "--timeout", strconv.Itoa(*options.Timeout))
+	}
+	args = append(args, containerInfo.ContainerId)
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		if pErr := c.checkPermissions(ctx); pErr != nil {
+			return pErr
+		}
+		return fmt.Errorf("stop failed: %w", err)
+	}
+	return nil
+}
+
+func (c *DockerEngine) KillContainer(ctx context.Context, containerInfo ContainerInfo) error {
+	cmd := exec.CommandContext(ctx, "docker", "kill", containerInfo.ContainerId)
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		if pErr := c.checkPermissions(ctx); pErr != nil {
+			return pErr
+		}
+		return fmt.Errorf("kill failed: %w", err)
 	}
 	return nil
 }

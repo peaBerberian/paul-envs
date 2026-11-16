@@ -242,6 +242,14 @@ paul-envs help
 
 # Uninstall paul-envs completely from your system (remove all projects, config etc.)
 paul-envs clean
+
+# Gracefully stop a project and all joined sessions (optional timeout in seconds)
+# Not needed most of the time because exiting the container stops it automatically
+paul-envs stop --timeout 10 myApp
+
+# Immediately kill a project's containers and all joined sessions
+paul-envs kill myApp
+
 ```
 
 To install completions in common user-local locations:

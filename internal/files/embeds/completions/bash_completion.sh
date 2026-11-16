@@ -6,7 +6,7 @@ _paulenvs()
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
     # Main commands
-    local commands="create list build run remove version completion interactive help clean"
+    local commands="create list build run remove version completion interactive help clean stop kill"
 
     # Options for create command
     local create_flags="--help --name --uid --gid --username --shell --nodejs --rust --python --go --git-name --git-email --package --enable-ssh --enable-sudo --neovim --starship --oh-my-posh --atuin --zellij --jujutsu --delta --open-code --claude-code --codex --firefox --no-mise --port --volume"
@@ -18,6 +18,8 @@ _paulenvs()
     local clean_flags="--help --no-prompt --engine --projects --config --managed-resources --build-cache"
     local engine_values="docker podman all"
     local run_flags="--help"
+    local stop_flags="--help --engine --timeout"
+    local kill_flags="--help --engine"
     local version_flags="--help"
     local completion_values="bash zsh fish"
     local interactive_flags="--help"
@@ -126,6 +128,22 @@ _paulenvs()
                 COMPREPLY=( $(compgen -W "${engine_values}" -- ${cur}) )
             else
                 COMPREPLY=( $(compgen -W "${clean_flags}" -- ${cur}) )
+            fi
+            return 0
+            ;;
+        stop|kill)
+            if [[ "${prev}" == --engine ]]; then
+                COMPREPLY=( $(compgen -W "docker podman" -- "${cur}") )
+            elif [[ "${prev}" == --timeout ]]; then
+                COMPREPLY=()
+            elif [[ "${cur}" == -* ]]; then
+                if [[ "${command}" == stop ]]; then
+                    COMPREPLY=( $(compgen -W "${stop_flags}" -- "${cur}") )
+                else
+                    COMPREPLY=( $(compgen -W "${kill_flags}" -- "${cur}") )
+                fi
+            else
+                COMPREPLY=( $(compgen -W "$(_get_containers)" -- "${cur}") )
             fi
             return 0
             ;;

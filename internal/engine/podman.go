@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -165,6 +166,35 @@ func (c *PodmanEngine) JoinContainer(ctx context.Context, containerInfo Containe
 			return pErr
 		}
 		return fmt.Errorf("join exited: %w", err)
+	}
+	return nil
+}
+
+func (c *PodmanEngine) StopContainer(ctx context.Context, containerInfo ContainerInfo, options StopOptions) error {
+	args := []string{"stop"}
+	if options.Timeout != nil {
+		args = append(args, "--time", strconv.Itoa(*options.Timeout))
+	}
+	args = append(args, containerInfo.ContainerId)
+	cmd := exec.CommandContext(ctx, "podman", args...)
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		if pErr := c.checkPermissions(ctx); pErr != nil {
+			return pErr
+		}
+		return fmt.Errorf("stop failed: %w", err)
+	}
+	return nil
+}
+
+func (c *PodmanEngine) KillContainer(ctx context.Context, containerInfo ContainerInfo) error {
+	cmd := exec.CommandContext(ctx, "podman", "kill", containerInfo.ContainerId)
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		if pErr := c.checkPermissions(ctx); pErr != nil {
+			return pErr
+		}
+		return fmt.Errorf("kill failed: %w", err)
 	}
 	return nil
 }

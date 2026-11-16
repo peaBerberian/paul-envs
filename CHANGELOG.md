@@ -4,6 +4,7 @@
 
 ### Features
 
+- Add `stop` and `kill` commands to terminate running project containers
 - Show each project's container status in `list`.
 
 ### Bug fixes

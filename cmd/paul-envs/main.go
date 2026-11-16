@@ -80,6 +80,10 @@ func runCommand(
 		return commands.Clean(ctx, args, filestore, console)
 	case "interactive", "i", "--interactive", "-i":
 		return commands.Interactive(ctx, args, filestore, console)
+	case "stop":
+		return commands.Stop(ctx, args, filestore, console)
+	case "kill":
+		return commands.Kill(ctx, args, filestore, console)
 	case "help", "h", "--help", "-h":
 		if len(args) == 0 || isHelpCommand(args[0]) {
 			commands.Help(filestore, console)

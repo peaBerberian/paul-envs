@@ -541,6 +541,101 @@ jobs:
           LIST_TEST_CONTAINER=""
           assert_status 'not running'
 
+      - name: Test stop and kill project containers
+        shell: bash
+        timeout-minutes: 4
+        run: |
+          set -euo pipefail
+          LIFECYCLE_CONTAINERS=()
+          LIFECYCLE_VOLUME="paulenv-lifecycle-$RANDOM"
+          LIFECYCLE_DIR=$(mktemp -d)
+          chmod 755 "$LIFECYCLE_DIR"
+          cleanup() {
+            for container in "${LIFECYCLE_CONTAINERS[@]}"; do
+              "$ENGINE" rm -f "$container" >/dev/null 2>&1 || true
+            done
+            "$ENGINE" volume rm "$LIFECYCLE_VOLUME" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          PROJECTS_PATH="${XDG_DATA_HOME:-$HOME/.local/share}/paul-envs/projects"
+          CONFIG_BEFORE=$(sha256sum "$PROJECTS_PATH/build-minimal/build.conf" "$PROJECTS_PATH/build-minimal/run.conf")
+          "$ENGINE" volume create "$LIFECYCLE_VOLUME"
+
+          cat > "$LIFECYCLE_DIR/fixture.sh" <<'EOF'
+          #!/bin/sh
+          if [ "$TERMINATION_MODE" = timeout ]; then
+            trap '' TERM
+          else
+            trap 'printf term > "/lifecycle/term-$TERMINATION_MODE"; exit 0' TERM
+          fi
+          printf preserved > /persist/marker
+          touch "/lifecycle/ready-$TERMINATION_MODE"
+          while :; do sleep 1 & wait "$!"; done
+          EOF
+
+          wait_for_file() {
+            for attempt in {1..30}; do
+              if [ -f "$1" ]; then return 0; fi
+              sleep 1
+            done
+            echo "Timed out waiting for $1"
+            "$ENGINE" logs "$LIFECYCLE_CONTAINER"
+            return 1
+          }
+
+          for mode in stop kill timeout; do
+            echo "Testing $mode with $ENGINE..."
+            LIFECYCLE_CONTAINER=$("$ENGINE" create --pull=never --network=none --init \
+              --name "paulenv-lifecycle-$mode-$RANDOM" \
+              --env "TERMINATION_MODE=$mode" --stop-signal SIGTERM \
+              --volume "$LIFECYCLE_DIR:/lifecycle" --volume "$LIFECYCLE_VOLUME:/persist" \
+              --entrypoint /bin/sh paulenv:build-minimal /lifecycle/fixture.sh)
+            LIFECYCLE_CONTAINERS+=("$LIFECYCLE_CONTAINER")
+            "$ENGINE" start "$LIFECYCLE_CONTAINER"
+            wait_for_file "$LIFECYCLE_DIR/ready-$mode"
+
+            "$ENGINE" exec "$LIFECYCLE_CONTAINER" /bin/sh -c \
+              'touch "/lifecycle/joined-$TERMINATION_MODE"; exec sleep 300' &
+            JOIN_PID=$!
+            wait_for_file "$LIFECYCLE_DIR/joined-$mode"
+
+            case "$mode" in
+              stop)
+                # Default selection must use the engine recorded by build.
+                timeout 30s ./paul-envs stop build-minimal </dev/null
+                test -f "$LIFECYCLE_DIR/term-$mode"
+                test "$("$ENGINE" inspect --format '{{.State.ExitCode}}' "$LIFECYCLE_CONTAINER")" = 0
+                ;;
+              kill)
+                timeout 30s ./paul-envs kill --engine "$ENGINE" build-minimal </dev/null
+                test ! -f "$LIFECYCLE_DIR/term-$mode"
+                test "$("$ENGINE" inspect --format '{{.State.ExitCode}}' "$LIFECYCLE_CONTAINER")" = 137
+                ;;
+              timeout)
+                timeout 30s ./paul-envs stop --engine "$ENGINE" --timeout 1 build-minimal </dev/null
+                test "$("$ENGINE" inspect --format '{{.State.ExitCode}}' "$LIFECYCLE_CONTAINER")" = 137
+                ;;
+            esac
+            test "$("$ENGINE" inspect --format '{{.State.Running}}' "$LIFECYCLE_CONTAINER")" = false
+            if wait "$JOIN_PID"; then
+              echo "Joined process unexpectedly exited successfully"
+              exit 1
+            fi
+
+            # Stopping or killing an inactive project must be harmless.
+            timeout 30s ./paul-envs stop --engine "$ENGINE" build-minimal </dev/null
+            timeout 30s ./paul-envs kill --engine "$ENGINE" build-minimal </dev/null
+
+            "$ENGINE" image inspect paulenv:build-minimal >/dev/null
+            "$ENGINE" volume inspect "$LIFECYCLE_VOLUME" >/dev/null
+            test "$("$ENGINE" run --rm --pull=never --network=none \
+              --volume "$LIFECYCLE_VOLUME:/persist" --entrypoint /bin/cat \
+              paulenv:build-minimal /persist/marker)" = preserved
+            test "$(sha256sum "$PROJECTS_PATH/build-minimal/build.conf" "$PROJECTS_PATH/build-minimal/run.conf")" = "$CONFIG_BEFORE"
+            echo "✓ $mode terminated the container and joined process without removing project data"
+          done
+
       - name: Run minimal project (basic test)
         shell: bash
         run: |

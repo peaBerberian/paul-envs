@@ -35,6 +35,8 @@ Commands:
   help         Show global or per-command help
   interactive  Start the guided interactive flow
   clean        Remove global paul-envs data and managed assets across projects
+  stop         Gracefully stop a project's containers
+  kill         Immediately kill a project's containers
 
 Run 'paul-envs <command> --help' for command-specific flags and examples.
 `)

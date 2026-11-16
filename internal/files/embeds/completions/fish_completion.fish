@@ -16,6 +16,8 @@ complete -c paul-envs -f -n __fish_use_subcommand -a help -d 'Show help'
 complete -c paul-envs -f -n __fish_use_subcommand -a version -d 'Show version'
 complete -c paul-envs -f -n __fish_use_subcommand -a completion -d 'Print shell completion scripts'
 complete -c paul-envs -f -n __fish_use_subcommand -a clean -d 'Remove all stored paul-envs data from your computer'
+complete -c paul-envs -f -n __fish_use_subcommand -a stop -d 'Gracefully stop project containers'
+complete -c paul-envs -f -n __fish_use_subcommand -a kill -d 'Immediately kill project containers'
 
 # Create command options
 complete -c paul-envs -n "__fish_seen_subcommand_from create" -l name -d "Specific a container name" -x
@@ -67,6 +69,10 @@ complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l projects -d 'Onl
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l config -d 'Only remove the global paul-envs configuration' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l managed-resources -d 'Only remove managed containers, images, volumes, and networks' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from clean" -l build-cache -d 'Only prune cached build data associated with paul-envs images' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from stop kill" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from stop kill" -l engine -d 'Container engine' -xa 'docker podman'
+complete -c paul-envs -n "__fish_seen_subcommand_from stop" -l timeout -d 'Seconds before forceful termination; -1 waits indefinitely' -x
+complete -c paul-envs -f -n "__fish_seen_subcommand_from stop kill" -a '(__paul_envs_containers)'
 
 # Container name completion for build, run, remove
 complete -c paul-envs -f -n "__fish_seen_subcommand_from build" -a '(__paul_envs_containers)'

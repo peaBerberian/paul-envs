@@ -13,6 +13,8 @@ _paulenvs() {
         'version:Show version'
         'completion:Print shell completion scripts'
         'clean:Remove all stored paul-envs data from your computer'
+        'stop:Gracefully stop project containers'
+        'kill:Immediately kill project containers'
     )
 
     # Get list of existing containers from paul-envs ls
@@ -110,6 +112,19 @@ _paulenvs() {
                         '--managed-resources[Only remove managed containers, images, volumes, and networks]' \
                         '--build-cache[Only prune cached build data associated with paul-envs images]' \
                         '--engine[Container engine to clean]:engine:(docker podman all)'
+                    ;;
+                stop)
+                    _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '--engine[Container engine]:engine:(docker podman)' \
+                        '--timeout[Seconds before forceful termination; -1 waits indefinitely]:seconds:' \
+                        "2:project name:(${containers[@]})"
+                    ;;
+                kill)
+                    _arguments \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '--engine[Container engine]:engine:(docker podman)' \
+                        "2:project name:(${containers[@]})"
                     ;;
                 interactive)
                     _arguments \

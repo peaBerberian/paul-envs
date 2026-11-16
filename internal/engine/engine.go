@@ -31,6 +31,8 @@ type ContainerEngine interface {
 	// exit.
 	RunContainer(ctx context.Context, project files.ProjectEntry, args []string) error
 	JoinContainer(ctx context.Context, containerInfo ContainerInfo, args []string) error
+	StopContainer(ctx context.Context, containerInfo ContainerInfo, options StopOptions) error
+	KillContainer(ctx context.Context, containerInfo ContainerInfo) error
 	// Create the persistent volume whose name is given as argument.
 	CreateVolume(ctx context.Context, name string) error
 	// Check if the project in argument has been built succesfully before and return
@@ -68,6 +70,11 @@ type ContainerEngine interface {
 
 type BuildOptions struct {
 	NoCache bool
+}
+
+type StopOptions struct {
+	// Nil uses the container engine's configured timeout; -1 waits indefinitely.
+	Timeout *int
 }
 
 // Returns information on a specific "engine" able to create images and run containers
