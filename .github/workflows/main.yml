@@ -476,7 +476,7 @@ jobs:
         shell: bash
         run: |
           echo "Building minimal project for ${{ matrix.platform }}..."
-          ./paul-envs build build-minimal
+          ./paul-envs build --engine "$ENGINE" build-minimal
           echo "✓ Build completed successfully"
 
           echo "Verifying built image architecture..."
@@ -487,6 +487,59 @@ jobs:
             echo "ERROR: Expected $EXPECTED_ARCH but got $ACTUAL_ARCH"
             exit 1
           fi
+
+      - name: Test list across container states
+        shell: bash
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          LIST_TEST_CONTAINER=""
+          cleanup() {
+            if [ -n "$LIST_TEST_CONTAINER" ]; then
+              "$ENGINE" unpause "$LIST_TEST_CONTAINER" >/dev/null 2>&1 || true
+              "$ENGINE" rm -f "$LIST_TEST_CONTAINER" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          assert_status() {
+            local expected="$1"
+            local output
+            output=$(timeout 30s ./paul-envs list)
+            printf '%s\n' "$output"
+            grep -Eq "^  Status +: ${expected}$" <<<"$output"
+            test "$(grep -c '^  Status ' <<<"$output")" -eq 1
+            grep -F "($ENGINE)" <<<"$output"
+            if grep -F 'Could not obtain status' <<<"$output"; then
+              echo "Unexpected status warning"
+              return 1
+            fi
+            test "$(timeout 30s ./paul-envs list --names)" = build-minimal
+          }
+
+          assert_status 'not running'
+
+          # Keep this fixture after exit so list can distinguish stopped from absent.
+          LIST_TEST_CONTAINER=$("$ENGINE" create --pull=never --network=none \
+            --name "paulenv-list-status-$RANDOM" \
+            --entrypoint /bin/sleep paulenv:build-minimal 300)
+          assert_status created
+
+          "$ENGINE" start "$LIST_TEST_CONTAINER"
+          assert_status running
+
+          "$ENGINE" pause "$LIST_TEST_CONTAINER"
+          assert_status paused
+
+          "$ENGINE" unpause "$LIST_TEST_CONTAINER"
+          assert_status running
+
+          "$ENGINE" stop --time 2 "$LIST_TEST_CONTAINER"
+          assert_status stopped
+
+          "$ENGINE" rm "$LIST_TEST_CONTAINER"
+          LIST_TEST_CONTAINER=""
+          assert_status 'not running'
 
       - name: Run minimal project (basic test)
         shell: bash
