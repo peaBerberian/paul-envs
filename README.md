@@ -24,37 +24,36 @@ usages but mine is optimized for multi-projects workflows and CLI-heavy usage.
 
 Key features:
 
--  **Ephemeral by default**: Only project files and key directories (e.g.
-   terminal history, installed tools' stored data, editor plugins...) are
-   persisted. Everything else resets on exit, keeping the environment clean.
+- **Ephemeral by default**: Only project files and key directories (e.g.
+  terminal history, installed tools' stored data, editor plugins...) are
+  persisted. Everything else resets on exit, keeping the environment clean.
 
--  **Multi-projects**: Multiple images can be handled, each being linked to a
-   project directory on your host.
+- **Multi-projects**: Multiple images can be handled, each being linked to a
+  project directory on your host.
 
--  **Minimal base**: The containers are just Ubuntu LTS and your chosen CLI
-   tools. This means no unnecessary package and a very common - thus tested -
-   base.
+- **Minimal base**: The containers are just Ubuntu LTS and your chosen CLI
+  tools. This means no unnecessary package and a very common - thus tested -
+  base.
 
--  **Dev-oriented**: Possibility to opt-in to the installation of many popular
-   CLI tools (`neovim`, `atuin`, `mise`, `jujutsu`, `zellij`, `claude code`...)
-   as well as many language toolkits (Node.js + npm, Rust + cargo, go, python +
-   pip + venv and WebAssembly tools like binaryen) or even a web browser.
+- **Dev-oriented**: Possibility to opt-in to the installation of many popular
+  CLI tools (`neovim`, `atuin`, `mise`, `jujutsu`, `zellij`, `claude code`...)
+  as well as many language toolkits (Node.js + npm, Rust + cargo, go, python +
+  pip + venv and WebAssembly tools like binaryen) or even a web browser.
 
--  **optional SSH**: You can opt-in to ssh access from the host (e.g. for
-   relying on your host's GUI editor), just like "devcontainers".
+- **optional SSH**: You can opt-in to ssh access from the host (e.g. for
+  relying on your host's GUI editor), just like "devcontainers".
 
--  **Shared caches**: cache directories are shared across all projects to avoid
-   redundant downloads.
+- **Shared caches**: cache directories are shared across all projects to avoid
+  redundant downloads.
 
--  **Fast setup**: Single shared `Dockerfile` means new project containers
-   build quickly.
+- **Fast setup**: Single shared `Dockerfile` means new project containers
+  build quickly.
 
--  **Easy to use**: I made it compatible with MacOS, Linux and Windows, with
-   automatic x86_64 or arm64 container creation depending on the host.
+- **Easy to use**: I made it compatible with MacOS, Linux and Windows, with
+  automatic x86_64 or arm64 container creation depending on the host.
 
-   The `paul-envs` binary also guides you when you call any command without
-   argument.
-
+  The `paul-envs` binary also guides you when you call any command without
+  argument.
 
 ## Comparison with other similar tools
 
@@ -143,12 +142,14 @@ right arguments (e.g. the right tools and git configuration). This is done
 through the `paul-envs create` "command".
 
 First ensure the target project is present locally in your host, then run:
+
 ```sh
 paul-envs create <path/to/your/project>
 ```
 
 Optionally, you may add a lot of flags to better configure that container.
 Here's an example of a real-life usage:
+
 ```sh
 # Will create a container named `myapp` with a default `zsh` shell and many
 # configurations. Also mount your `.git-credentials` readonly to the container.
@@ -191,6 +192,7 @@ This step relies directly on an installed container engine:
 
 To build a container, just run the `paul-envs build <NAME>` command.
 For example, with a container named `myApp`, you would just do:
+
 ```sh
 paul-envs build myApp
 ```
@@ -203,6 +205,7 @@ packages are loaded, tools are set-up etc.
 Now that the container is built. It can be run at any time, with the
 `paul-envs run` command.
 For example, with a container named `myApp`, you would do:
+
 ```sh
 paul-envs run myApp
 ```
@@ -217,6 +220,7 @@ the state it was at build-time.
 ### Other commands
 
 `paul-envs` also proposes multiple other commands:
+
 ```sh
 # List all created configurations, built or not
 paul-envs list
@@ -283,6 +287,7 @@ This means:
 
 The dotfiles sync is broad by default, so you can keep normal sibling file
 layouts such as:
+
 ```
 dotfiles/
 ├── .bashrc

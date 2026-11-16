@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Show each project's container status in `list`.
+
 ### Bug fixes
 
 - Fix containers asking for a password at startup with Podman 6.2+.

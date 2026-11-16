@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/peaberberian/paul-envs/internal/console"
@@ -45,15 +46,14 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 			console.WriteLn(entry.ProjectName)
 		}
 	} else {
-		engineCache := map[engine.Selection]engine.ContainerEngine{}
-		var allEngines []engine.ContainerEngine
+		engineCache := map[engine.Selection]*listEngineStatus{}
 
 		for _, entry := range entries {
-			imageInfo, warnErr := listProjectImageInfo(ctx, entry.ProjectName, filestore, console, engineCache, &allEngines)
+			info, warnErr := listProjectInfo(ctx, entry.ProjectName, filestore, console, engineCache)
 			if warnErr != nil {
-				console.Warn("Could not obtain image info for project '%s': %s", entry.ProjectName, warnErr)
+				console.Warn("Could not obtain status for project '%s': %s", entry.ProjectName, warnErr)
 			}
-			printProjectInfo(entry, imageInfo, console)
+			printProjectInfo(entry, info, console)
 		}
 		if len(entries) <= 1 {
 			console.WriteLn("Total: %d project", len(entries))
@@ -64,51 +64,116 @@ func List(ctx context.Context, args []string, filestore *files.FileStore, consol
 	return nil
 }
 
-func listProjectImageInfo(
+type projectListInfo struct {
+	image        *engine.ImageInfo
+	engineName   string
+	runtimeState string
+}
+
+type listEngineStatus struct {
+	containerEngine engine.ContainerEngine
+	containers      []engine.ContainerInfo
+	err             error
+}
+
+func listProjectInfo(
 	ctx context.Context,
 	projectName string,
 	filestore *files.FileStore,
 	console *console.Console,
-	engineCache map[engine.Selection]engine.ContainerEngine,
-	allEngines *[]engine.ContainerEngine,
-) (*engine.ImageInfo, error) {
+	engineCache map[engine.Selection]*listEngineStatus,
+) (projectListInfo, error) {
 	selectedEngine, err := listProjectEngineSelection(projectName, filestore)
 	if err != nil {
-		return nil, err
+		return projectListInfo{engineName: "unknown", runtimeState: "unknown"}, err
 	}
 
 	if selectedEngine != engine.SelectionAuto {
-		containerEngine, ok := engineCache[selectedEngine]
-		if !ok {
-			containerEngine, err = engine.NewSelected(ctx, console, selectedEngine)
-			if err != nil {
-				return nil, err
-			}
-			engineCache[selectedEngine] = containerEngine
-		}
-		return containerEngine.GetImageInfo(ctx, projectName)
+		status := getListEngineStatus(ctx, selectedEngine, console, engineCache)
+		return inspectListProject(ctx, projectName, selectedEngine, status)
 	}
 
-	if *allEngines == nil {
-		engines, err := engine.NewSet(ctx, console, engine.SelectionAll)
-		if err != nil {
-			return nil, err
-		}
-		*allEngines = engines
-	}
-
-	var lastErr error
-	for _, containerEngine := range *allEngines {
-		imageInfo, err := containerEngine.GetImageInfo(ctx, projectName)
-		if err != nil {
-			lastErr = err
+	fallback := projectListInfo{engineName: "unknown", runtimeState: "unknown"}
+	var lookupErr error
+	available := false
+	for _, selection := range []engine.Selection{engine.SelectionPodman, engine.SelectionDocker} {
+		status := getListEngineStatus(ctx, selection, console, engineCache)
+		if status.containerEngine == nil {
 			continue
 		}
-		if imageInfo != nil {
-			return imageInfo, lastErr
+		available = true
+		info, err := inspectListProject(ctx, projectName, selection, status)
+		if (info.image != nil && info.image.BuiltAt != nil) ||
+			(info.runtimeState != "not running" && info.runtimeState != "unknown") {
+			return info, err
+		}
+		lookupErr = errors.Join(lookupErr, err)
+		if fallback.engineName == "unknown" && err == nil {
+			fallback = info
 		}
 	}
-	return nil, lastErr
+	if !available {
+		return fallback, errors.New("no supported container engine found, please install podman or docker first")
+	}
+	if lookupErr != nil {
+		return projectListInfo{engineName: "unknown", runtimeState: "unknown"}, lookupErr
+	}
+	return fallback, nil
+}
+
+func getListEngineStatus(ctx context.Context, selection engine.Selection, console *console.Console, cache map[engine.Selection]*listEngineStatus) *listEngineStatus {
+	if status, ok := cache[selection]; ok {
+		return status
+	}
+	containerEngine, err := engine.NewSelected(ctx, console, selection)
+	status := &listEngineStatus{containerEngine: containerEngine, err: err}
+	if err == nil {
+		status.containers, status.err = containerEngine.ListContainers(ctx)
+	}
+	cache[selection] = status
+	return status
+}
+
+func inspectListProject(ctx context.Context, projectName string, selection engine.Selection, status *listEngineStatus) (projectListInfo, error) {
+	info := projectListInfo{engineName: string(selection), runtimeState: "unknown"}
+	if status.containerEngine == nil {
+		return info, status.err
+	}
+	var imageErr error
+	info.image, imageErr = status.containerEngine.GetImageInfo(ctx, projectName)
+	if status.err == nil {
+		info.runtimeState = projectRuntimeState(projectName, status.containers)
+	}
+	if imageErr != nil && status.err != nil && imageErr.Error() == status.err.Error() {
+		return info, imageErr
+	}
+	return info, errors.Join(imageErr, status.err)
+}
+
+func projectRuntimeState(projectName string, containers []engine.ContainerInfo) string {
+	var states []string
+	for _, container := range containers {
+		if container.ProjectName == nil || *container.ProjectName != projectName {
+			continue
+		}
+		state := container.State
+		switch state {
+		case "exited", "stopped":
+			state = "stopped"
+		case "configured", "initialized":
+			state = "created"
+		case "":
+			state = "unknown"
+		}
+		if !slices.Contains(states, state) {
+			states = append(states, state)
+		}
+	}
+	if len(states) == 0 {
+		return "not running"
+	}
+	slices.Sort(states)
+	return strings.Join(states, ", ")
 }
 
 func listProjectEngineSelection(projectName string, filestore *files.FileStore) (engine.Selection, error) {
@@ -127,15 +192,16 @@ func listProjectEngineSelection(projectName string, filestore *files.FileStore) 
 	return selected, nil
 }
 
-func printProjectInfo(projectEntry files.ProjectEntry, imageInfo *engine.ImageInfo, console *console.Console) bool {
+func printProjectInfo(projectEntry files.ProjectEntry, info projectListInfo, console *console.Console) bool {
 	console.Info("%s", projectEntry.ProjectName)
 	console.WriteLn("  Mounted project   : %s", projectEntry.ProjectPath)
+	console.WriteLn("  Status            : %s", info.runtimeState)
 	console.WriteLn("  build.conf file   : %s", projectEntry.BuildConfigPath)
 	console.WriteLn("  run.conf file     : %s", projectEntry.RuntimeConfigPath)
-	if imageInfo != nil {
-		console.WriteLn("  Container image   : %s", imageInfo.ImageName)
+	if imageInfo := info.image; imageInfo != nil {
+		console.WriteLn("  Container image   : %s (%s)", imageInfo.ImageName, info.engineName)
 		if imageInfo.BuiltAt == nil {
-			console.WriteLn("  Last built at     : Never")
+			console.WriteLn("  Last built at     : Unknown")
 		} else {
 			console.WriteLn("  Last built at     : %s", imageInfo.BuiltAt)
 		}

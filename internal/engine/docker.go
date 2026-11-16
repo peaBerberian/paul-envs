@@ -228,7 +228,7 @@ func (c *DockerEngine) GetImageInfo(ctx context.Context, projectName string) (*I
 }
 
 func (c *DockerEngine) ListContainers(ctx context.Context) ([]ContainerInfo, error) {
-	cmd := exec.CommandContext(ctx, "docker", "ps", "-a", "--filter", "name=paulenv-", "--format", "{{.ID}}\t{{.Image}}\t{{.Names}}")
+	cmd := exec.CommandContext(ctx, "docker", "ps", "-a", "--filter", "name=paulenv-", "--format", "{{.ID}}\t{{.Image}}\t{{.Names}}\t{{.State}}")
 	output, err := cmd.Output()
 	if err != nil {
 		if pErr := c.checkPermissions(ctx); pErr != nil {
@@ -243,17 +243,21 @@ func (c *DockerEngine) ListContainers(ctx context.Context) ([]ContainerInfo, err
 		if s == "" {
 			continue
 		}
-		parts := strings.SplitN(s, "\t", 3)
+		parts := strings.SplitN(s, "\t", 4)
 		id := parts[0]
 		var image *string
 		var name *string
 		var projectName *string
+		var state string
 
 		if len(parts) > 1 && parts[1] != "" {
 			image = &parts[1]
 		}
 		if len(parts) > 2 && parts[2] != "" {
 			name = &parts[2]
+		}
+		if len(parts) > 3 {
+			state = parts[3]
 		}
 		if image != nil {
 			projectName = projectNameFromImage(*image)
@@ -270,6 +274,7 @@ func (c *DockerEngine) ListContainers(ctx context.Context) ([]ContainerInfo, err
 			ContainerName: name,
 			ContainerId:   id,
 			ImageName:     image,
+			State:         state,
 		})
 	}
 	return result, nil

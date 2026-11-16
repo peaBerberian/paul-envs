@@ -109,6 +109,8 @@ type ContainerInfo struct {
 	ImageName *string
 	// Its Id with which it can be refered to
 	ContainerId string
+	// The engine-reported runtime state, such as running, paused, or exited.
+	State string
 }
 
 // Information on a particular container Network interface
