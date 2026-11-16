@@ -108,7 +108,10 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 	} else if needsRebuild {
 		console.WriteLn("The '%s' project needs to be re-built: %s", project.ProjectName, reason)
 		choice, err := console.AskYesNo("Do you want to build it first?", true)
-		if err != nil || choice {
+		if err != nil {
+			return err
+		}
+		if choice {
 			if err = Build(ctx, buildArgsForEngine(project.ProjectName, selectedEngine), filestore, console); err != nil {
 				return fmt.Errorf("did not succeed to build project: %w", err)
 			}
