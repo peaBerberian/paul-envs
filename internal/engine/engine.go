@@ -44,6 +44,9 @@ type ContainerEngine interface {
 	// Returns information on the given project from the point of view of the container
 	// engine.
 	GetImageInfo(ctx context.Context, projectName string) (*ImageInfo, error)
+	// Measure storage for the requested projects, excluding their images and host
+	// bind mounts. Returns available measurements even when another query fails.
+	GetStorageUsage(ctx context.Context, projectNames []string) (StorageUsage, error)
 	// List containers currently known by this container engine
 	ListContainers(ctx context.Context) ([]ContainerInfo, error)
 	// Remove container listed from this container engine
@@ -104,6 +107,27 @@ type ImageInfo struct {
 	// The timestamp at which it has last been built.
 	// `nil` if it never has been built.
 	BuiltAt *time.Time
+	// Engine-reported image bytes, including shared layers; nil if unavailable.
+	SizeBytes *int64
+}
+
+// StorageUsage contains measurements classified by the engine. All byte counts
+// are nil when unavailable; a known absent resource has size zero.
+// These are snapshots, not reclaimable disk totals; volume sizes are rounded
+// by the engine CLI before being converted to bytes.
+type StorageUsage struct {
+	// One entry per requested project, keyed by project name.
+	Projects map[string]ProjectStorageUsage
+	// Shared cache volume, counted once per engine.
+	SharedCacheBytes *int64
+}
+
+type ProjectStorageUsage struct {
+	// Data preserved in the project's persistent volume.
+	PersistedBytes *int64
+	// Sum of the writable layers of this project's containers, excluding images
+	// and volumes. Removed with the containers.
+	TemporaryBytes *int64
 }
 
 // Information on a particular container as stored by the container engine

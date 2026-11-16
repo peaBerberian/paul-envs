@@ -541,6 +541,78 @@ jobs:
           LIST_TEST_CONTAINER=""
           assert_status 'not running'
 
+      - name: Test list storage sizes
+        shell: bash
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          STORAGE_TEST_CONTAINER=""
+          cleanup() {
+            if [ -n "$STORAGE_TEST_CONTAINER" ]; then
+              "$ENGINE" rm -f "$STORAGE_TEST_CONTAINER" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          # build already creates the shared cache. run creates any missing
+          # named volume; a second volume create would fail with Podman.
+          STORAGE_TEST_CONTAINER=$("$ENGINE" run -d --pull=never --network=none \
+            --name "paulenv-list-storage-$RANDOM" --user 0:0 \
+            --volume paulenv-build-minimal-local:/persisted \
+            --volume paulenv-shared-cache:/cache \
+            --entrypoint /bin/sh paulenv:build-minimal -ec '
+              dd if=/dev/zero of=/persisted/list-test bs=1048576 count=1
+              dd if=/dev/zero of=/cache/list-test bs=1048576 count=2
+              dd if=/dev/zero of=/tmp/list-test bs=1048576 count=3
+              touch /tmp/list-test-ready
+              exec sleep 300
+            ')
+          for attempt in {1..30}; do
+            if "$ENGINE" exec "$STORAGE_TEST_CONTAINER" test -f /tmp/list-test-ready; then
+              break
+            fi
+            sleep 1
+          done
+          "$ENGINE" exec "$STORAGE_TEST_CONTAINER" test -f /tmp/list-test-ready
+
+          timeout 30s ./paul-envs list > list-storage-active.txt
+          "$ENGINE" rm -f "$STORAGE_TEST_CONTAINER"
+          STORAGE_TEST_CONTAINER=""
+          timeout 30s ./paul-envs list > list-storage-removed.txt
+          test "$(timeout 30s ./paul-envs list --names)" = build-minimal
+
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          def sizes(path):
+              text = Path(path).read_text()
+              print(text)
+              assert "Could not obtain" not in text, text
+              values = {}
+              columns = set()
+              for line in text.splitlines():
+                  match = re.match(r"^\s*(Image size|Persisted data size|Temporary data size|Shared cache size)\s+: ([0-9.]+) (B|KiB|MiB|GiB|TiB)$", line)
+                  if match:
+                      label, number, unit = match.groups()
+                      assert label not in values, text
+                      values[label] = float(number) * 1024 ** ["B", "KiB", "MiB", "GiB", "TiB"].index(unit)
+                      columns.add(line.index(":"))
+              assert len(values) == 4, text
+              assert len(columns) == 1, text
+              return values
+
+          active = sizes("list-storage-active.txt")
+          removed = sizes("list-storage-removed.txt")
+          assert active["Image size"] > 0
+          assert active["Image size"] == removed["Image size"]
+          assert active["Temporary data size"] >= 3 * 1024 ** 2
+          assert removed["Temporary data size"] == 0
+          for report in (active, removed):
+              assert report["Persisted data size"] >= 1024 ** 2
+              assert report["Shared cache size"] >= 2 * 1024 ** 2
+          PY
+
       - name: Test stop and kill project containers
         shell: bash
         timeout-minutes: 4

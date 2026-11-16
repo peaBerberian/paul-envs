@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -86,7 +87,7 @@ func (c *DockerEngine) RunContainer(ctx context.Context, project files.ProjectEn
 		workDir = projectMount
 	}
 
-	if err := c.ensureVolumesExist(ctx, "paulenv-shared-cache", projectLocalVolumeName(project.ProjectName)); err != nil {
+	if err := c.ensureVolumesExist(ctx, sharedCacheVolumeName, projectLocalVolumeName(project.ProjectName)); err != nil {
 		return err
 	}
 
@@ -97,7 +98,7 @@ func (c *DockerEngine) RunContainer(ctx context.Context, project files.ProjectEn
 		"--name", projectContainerName(project.ProjectName),
 		"--workdir", workDir,
 		"--volume", runtimeCfg.ProjectPath + ":" + projectMount,
-		"--volume", "paulenv-shared-cache:/home/" + username + "/.container-cache",
+		"--volume", sharedCacheVolumeName + ":/home/" + username + "/.container-cache",
 		"--volume", projectLocalVolumeName(project.ProjectName) + ":/home/" + username + "/.container-local",
 	}
 	if runtimeCfg.DotfilesPath != "" {
@@ -241,7 +242,7 @@ func (c *DockerEngine) GetImageInfo(ctx context.Context, projectName string) (*I
 	imageName := projectImageName(projectName)
 	info := &ImageInfo{ImageName: imageName, ProjectName: &projectName}
 
-	cmd := exec.CommandContext(ctx, "docker", "image", "inspect", imageName, "--format", "{{.Created}}")
+	cmd := exec.CommandContext(ctx, "docker", "image", "inspect", imageName, "--format", imageInfoFormat)
 	output, err := cmd.Output()
 	if err != nil {
 		if pErr := c.checkPermissions(ctx); pErr != nil {
@@ -251,10 +252,40 @@ func (c *DockerEngine) GetImageInfo(ctx context.Context, projectName string) (*I
 		}
 		return nil, err
 	}
-	if buildTime, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(output))); err == nil {
-		info.BuiltAt = &buildTime
+	if err := parseImageInfo(output, info); err != nil {
+		return info, err
 	}
 	return info, nil
+}
+
+func (c *DockerEngine) GetStorageUsage(ctx context.Context, projectNames []string) (StorageUsage, error) {
+	output, err := storageOutput(ctx, "docker", "system", "df", "--verbose", "--format", "{{json .Volumes}}")
+	var volumes map[string]*int64
+	if err == nil {
+		volumes, err = parseDockerVolumeSizes(output)
+	}
+	return collectStorageUsage(ctx, "docker", projectNames, volumes, err, c.ListContainers)
+}
+
+func parseDockerVolumeSizes(output []byte) (map[string]*int64, error) {
+	var volumes []struct {
+		Name string
+		Size string
+	}
+	if err := json.Unmarshal(output, &volumes); err != nil {
+		return nil, fmt.Errorf("parse volume sizes: %w", err)
+	}
+	if volumes == nil {
+		return nil, fmt.Errorf("volume report is missing its array")
+	}
+	sizes := make(map[string]*int64, len(volumes))
+	for _, volume := range volumes {
+		if volume.Name == "" {
+			return nil, fmt.Errorf("volume report is missing a volume name")
+		}
+		sizes[volume.Name] = parseReportedSize(volume.Size)
+	}
+	return sizes, nil
 }
 
 func (c *DockerEngine) ListContainers(ctx context.Context) ([]ContainerInfo, error) {

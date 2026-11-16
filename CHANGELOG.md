@@ -6,6 +6,7 @@
 
 - Add `stop` and `kill` commands to terminate running project containers
 - Show each project's container status in `list`.
+- Show image, persisted data, temporary data, and shared cache sizes in `list`.
 
 ### Bug fixes
 

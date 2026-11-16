@@ -42,6 +42,8 @@ func projectContainerName(projectName string) string {
 	return fmt.Sprintf("paulenv-%s", projectName)
 }
 
+const sharedCacheVolumeName = "paulenv-shared-cache"
+
 func projectLocalVolumeName(projectName string) string {
 	return fmt.Sprintf("paulenv-%s-local", projectName)
 }

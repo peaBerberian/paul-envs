@@ -89,7 +89,7 @@ func (c *PodmanEngine) RunContainer(ctx context.Context, project files.ProjectEn
 		workDir = projectMount
 	}
 
-	if err := c.ensureVolumesExist(ctx, "paulenv-shared-cache", projectLocalVolumeName(project.ProjectName)); err != nil {
+	if err := c.ensureVolumesExist(ctx, sharedCacheVolumeName, projectLocalVolumeName(project.ProjectName)); err != nil {
 		return err
 	}
 
@@ -105,7 +105,7 @@ func (c *PodmanEngine) RunContainer(ctx context.Context, project files.ProjectEn
 		"--name", projectContainerName(project.ProjectName),
 		"--workdir", workDir,
 		"--volume", runtimeCfg.ProjectPath+":"+projectMount,
-		"--volume", "paulenv-shared-cache:/home/"+username+"/.container-cache",
+		"--volume", sharedCacheVolumeName+":/home/"+username+"/.container-cache",
 		"--volume", projectLocalVolumeName(project.ProjectName)+":/home/"+username+"/.container-local",
 	)
 	if runtimeCfg.DotfilesPath != "" {
@@ -247,7 +247,7 @@ func (c *PodmanEngine) CreateVolume(ctx context.Context, name string) error {
 func (c *PodmanEngine) GetImageInfo(ctx context.Context, projectName string) (*ImageInfo, error) {
 	imageName := "localhost/" + projectImageName(projectName)
 	info := &ImageInfo{ImageName: imageName, ProjectName: &projectName}
-	cmd := exec.CommandContext(ctx, "podman", "image", "inspect", imageName, "--format", "{{.Created}}")
+	cmd := exec.CommandContext(ctx, "podman", "image", "inspect", imageName, "--format", imageInfoFormat)
 	output, err := cmd.Output()
 	if err != nil {
 		if pErr := c.checkPermissions(ctx); pErr != nil {
@@ -257,10 +257,52 @@ func (c *PodmanEngine) GetImageInfo(ctx context.Context, projectName string) (*I
 		}
 		return nil, err
 	}
-	if buildTime := parseCreatedAt(string(output)); buildTime != nil {
-		info.BuiltAt = buildTime
+	if err := parseImageInfo(output, info); err != nil {
+		return info, err
 	}
 	return info, nil
+}
+
+func (c *PodmanEngine) GetStorageUsage(ctx context.Context, projectNames []string) (StorageUsage, error) {
+	// Podman's JSON output only contains category totals, and --format cannot
+	// be combined with --verbose. Per-volume sizes require the verbose table.
+	output, err := storageOutput(ctx, "podman", "system", "df", "--verbose")
+	var volumes map[string]*int64
+	if err == nil {
+		volumes, err = parsePodmanVolumeSizes(string(output))
+	}
+	return collectStorageUsage(ctx, "podman", projectNames, volumes, err, c.ListContainers)
+}
+
+func parsePodmanVolumeSizes(output string) (map[string]*int64, error) {
+	sizes := map[string]*int64{}
+	inVolumes, sawHeader := false, false
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "Local Volumes space usage:" {
+			inVolumes = true
+			continue
+		}
+		if !inVolumes || line == "" {
+			continue
+		}
+		fields := strings.Fields(line)
+		if strings.Join(fields, " ") == "VOLUME NAME LINKS SIZE" {
+			sawHeader = true
+			continue
+		}
+		if strings.HasPrefix(line, "Build cache usage:") {
+			break
+		}
+		if !sawHeader || len(fields) < 3 {
+			return nil, fmt.Errorf("unrecognized volume report")
+		}
+		sizes[fields[0]] = parseReportedSize(strings.Join(fields[2:], ""))
+	}
+	if !sawHeader {
+		return nil, fmt.Errorf("volume report is missing its table")
+	}
+	return sizes, nil
 }
 
 func (c *PodmanEngine) ListContainers(ctx context.Context) ([]ContainerInfo, error) {
@@ -520,7 +562,7 @@ func projectNameFromImage(imageName string) *string {
 }
 
 func isPaulEnvVolume(volumeName string) bool {
-	return volumeName == "paulenv-shared-cache" ||
+	return volumeName == sharedCacheVolumeName ||
 		(strings.HasPrefix(volumeName, "paulenv-") && strings.HasSuffix(volumeName, "-local"))
 }
 

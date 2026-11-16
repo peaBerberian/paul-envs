@@ -18,6 +18,7 @@ import (
 )
 
 func TestListNamesDoesNotEmitEngineMessages(t *testing.T) {
+	t.Setenv("PATH", "")
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
@@ -124,7 +125,7 @@ func TestListRuntimeStatusWithEngines(t *testing.T) {
 		t.Skip("fake engines require /bin/sh")
 	}
 	for _, binary := range []string{"docker", "podman"} {
-		for _, failure := range []string{"", "daemon unavailable", "permission denied"} {
+		for _, failure := range []string{"", "daemon unavailable", "permission denied", "storage unavailable", "malformed storage"} {
 			t.Run(fmt.Sprintf("%s/failure=%s", binary, failure), func(t *testing.T) {
 				t.Setenv("XDG_DATA_HOME", t.TempDir())
 				t.Setenv("XDG_CONFIG_HOME", t.TempDir())
@@ -157,7 +158,7 @@ func TestListRuntimeStatusWithEngines(t *testing.T) {
 printf '%s\n' "$1" >> "$PAUL_ENVS_TEST_CALLS"
 case "$1" in
     ps)
-        if [ -n "$PAUL_ENVS_TEST_FAILURE" ]; then
+        if [ -n "$PAUL_ENVS_TEST_FAILURE" ] && [ "$PAUL_ENVS_TEST_FAILURE" != "storage unavailable" ] && [ "$PAUL_ENVS_TEST_FAILURE" != "malformed storage" ]; then
             printf '%s\n' "$PAUL_ENVS_TEST_FAILURE" >&2
             exit 1
         fi
@@ -167,12 +168,27 @@ case "$1" in
         printf 'c\tunrelated:latest\tunrelated\trunning\n'
         ;;
     image)
-        if [ -n "$PAUL_ENVS_TEST_FAILURE" ]; then
+        if [ -n "$PAUL_ENVS_TEST_FAILURE" ] && [ "$PAUL_ENVS_TEST_FAILURE" != "storage unavailable" ] && [ "$PAUL_ENVS_TEST_FAILURE" != "malformed storage" ]; then
             printf '%s\n' "$PAUL_ENVS_TEST_FAILURE" >&2
             exit 1
         fi
-        printf '%s\n' '2026-11-16T00:00:00Z'
+        printf '%s\n' '{"Created":"2026-11-16T00:00:00Z","Size":1048576}'
         ;;
+    system)
+        if [ "$PAUL_ENVS_TEST_FAILURE" = "storage unavailable" ]; then
+            printf 'permission denied\n' >&2
+            exit 1
+        fi
+        if [ "$PAUL_ENVS_TEST_FAILURE" = "malformed storage" ]; then
+            printf 'unexpected output\n'
+            exit 0
+        fi
+        case "$0" in
+            */docker) printf '%s\n' '[{"Name":"paulenv-alpha-local","Size":"1.024kB"},{"Name":"paulenv-beta-local","Size":"N/A"},{"Name":"paulenv-shared-cache","Size":"2.048kB"}]' ;;
+            */podman) printf 'Local Volumes space usage:\nVOLUME NAME LINKS SIZE\npaulenv-alpha-local 1 1.024kB\npaulenv-beta-local 0 N/A\npaulenv-shared-cache 1 2.048kB\n' ;;
+        esac
+        ;;
+    container) printf '%s\n' '[{"Id":"aaaa","SizeRw":1024},{"Id":"bbbb","SizeRw":2048}]' ;;
     *) exit 1 ;;
 esac
 `
@@ -190,8 +206,8 @@ esac
 				if got := strings.Count(out.String(), "("+binary+")"); failure == "" && got != 3 {
 					t.Fatalf("expected engine on each project, got:\n%s", &out)
 				}
-				if failure != "" {
-					if strings.Count(out.String(), "Status            : unknown") != 3 || !strings.Contains(out.String(), failure) {
+				if failure != "" && failure != "storage unavailable" && failure != "malformed storage" {
+					if strings.Count(out.String(), "Status              : unknown") != 3 || !strings.Contains(out.String(), failure) {
 						t.Fatalf("failed queries must show unknown and a warning:\n%s", &out)
 					}
 					if strings.Count(out.String(), failure) != 3 {
@@ -199,7 +215,7 @@ esac
 					}
 				} else {
 					for _, state := range []string{"running", "stopped", "not running"} {
-						if !strings.Contains(out.String(), "Status            : "+state) {
+						if !strings.Contains(out.String(), "Status              : "+state) {
 							t.Fatalf("missing state %q:\n%s", state, &out)
 						}
 					}
@@ -207,11 +223,107 @@ esac
 					if err != nil {
 						t.Fatal(err)
 					}
-					if strings.Count(string(calls), "ps\n") != 1 {
-						t.Fatalf("container list should be queried once per engine: %s", calls)
+					for _, query := range []string{"system", "container"} {
+						if strings.Count(string(calls), query+"\n") != 1 {
+							t.Fatalf("%s should be queried once per engine: %s", query, calls)
+						}
+					}
+					for _, line := range []string{"Image size          : 1.0 MiB", "Temporary data size : 1.0 KiB", "Temporary data size : 2.0 KiB", "Temporary data size : 0 B"} {
+						if !strings.Contains(out.String(), line) {
+							t.Fatalf("missing size %q: %s", line, &out)
+						}
+					}
+					if failure == "" {
+						for _, line := range []string{"Persisted data size : 1.0 KiB", "Persisted data size : Unknown", "Persisted data size : 0 B", "Shared cache size     : 2.0 KiB"} {
+							if strings.Count(out.String(), line) != 1 {
+								t.Fatalf("expected size once %q: %s", line, &out)
+							}
+						}
+					} else if strings.Count(out.String(), "Persisted data size : Unknown") != 3 ||
+						!strings.Contains(out.String(), "Shared cache size     : Unknown") ||
+						strings.Count(out.String(), "Could not obtain storage usage") != 1 {
+						t.Fatalf("failed storage query must show unknown volumes and one warning: %s", &out)
 					}
 				}
 			})
+		}
+	}
+}
+
+func TestListStorageWithoutBuilds(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake engines require /bin/sh")
+	}
+	for _, binary := range []string{"docker", "podman", "none"} {
+		t.Run(binary, func(t *testing.T) {
+			t.Setenv("XDG_DATA_HOME", t.TempDir())
+			t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+			store, err := files.NewFileStore()
+			if err != nil {
+				t.Fatal(err)
+			}
+			for path, content := range map[string]string{
+				store.GetProjectBuildConfigPath("new-project"):   "VERSION 1.0.0\n",
+				store.GetProjectRuntimeConfigPath("new-project"): "VERSION 1.0.0\nPATH /tmp/new-project\n",
+			} {
+				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			dir := t.TempDir()
+			t.Setenv("PATH", dir)
+			if binary != "none" {
+				script := `#!/bin/sh
+case "$1" in
+    ps) exit 0 ;;
+    image) exit 1 ;;
+    system)
+        case "$0" in
+            */docker) printf '[]\n' ;;
+            */podman) printf 'Local Volumes space usage:\nVOLUME NAME LINKS SIZE\n' ;;
+        esac
+        ;;
+    *) exit 1 ;;
+esac
+`
+				if err := os.WriteFile(filepath.Join(dir, binary), []byte(script), 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var out bytes.Buffer
+			cons := console.New(context.Background(), strings.NewReader(""), &out, &out)
+			if err := List(context.Background(), nil, store, cons); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(out.String(), "Image size          : Unknown") || !strings.Contains(out.String(), "Total: 1 project") {
+				t.Fatalf("missing build must not prevent listing: %s", &out)
+			}
+			want := "0 B"
+			if binary == "none" {
+				want = "Unknown"
+			}
+			for _, label := range []string{"Persisted data size", "Temporary data size"} {
+				if !strings.Contains(out.String(), label+" : "+want) {
+					t.Fatalf("expected %s = %s: %s", label, want, &out)
+				}
+			}
+		})
+	}
+}
+
+func TestFormatStorageSize(t *testing.T) {
+	if got := formatStorageSize(nil); got != "Unknown" {
+		t.Fatalf("nil size = %s", got)
+	}
+	for _, tt := range []struct {
+		bytes int64
+		want  string
+	}{{-1, "Unknown"}, {0, "0 B"}, {512, "512 B"}, {1024, "1.0 KiB"}, {1536, "1.5 KiB"}, {1 << 20, "1.0 MiB"}, {1 << 30, "1.0 GiB"}} {
+		if got := formatStorageSize(&tt.bytes); got != tt.want {
+			t.Fatalf("size %d = %s, want %s", tt.bytes, got, tt.want)
 		}
 	}
 }

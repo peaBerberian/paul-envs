@@ -49,6 +49,10 @@ func (s *stubEngine) GetImageInfo(context.Context, string) (*engine.ImageInfo, e
 	return nil, nil
 }
 
+func (s *stubEngine) GetStorageUsage(context.Context, []string) (engine.StorageUsage, error) {
+	return engine.StorageUsage{}, nil
+}
+
 func (s *stubEngine) ListContainers(context.Context) ([]engine.ContainerInfo, error) {
 	return []engine.ContainerInfo{}, nil
 }
