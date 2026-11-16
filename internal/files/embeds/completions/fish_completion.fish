@@ -59,6 +59,7 @@ complete -c paul-envs -n "__fish_seen_subcommand_from run" -l help -s h -d 'Show
 complete -c paul-envs -n "__fish_seen_subcommand_from remove" -l help -s h -d 'Show help' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from remove" -l no-prompt -d 'Skip confirmation and require a project name' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from version" -l help -s h -d 'Show help' -f
+complete -c paul-envs -n "__fish_seen_subcommand_from version" -l short -d 'Print only the application version' -f
 complete -c paul-envs -n "__fish_seen_subcommand_from completion" -l help -s h -d 'Show help' -f
 complete -c paul-envs -f -n "__fish_seen_subcommand_from completion" -a 'bash zsh fish'
 complete -c paul-envs -n "__fish_seen_subcommand_from interactive" -l help -s h -d 'Show help' -f

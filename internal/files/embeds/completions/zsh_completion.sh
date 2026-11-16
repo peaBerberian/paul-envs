@@ -96,7 +96,8 @@ _paulenvs() {
                     ;;
                 version)
                     _arguments \
-                        '(-h --help)'{-h,--help}'[Show help]'
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '--short[Print only the application version]'
                     ;;
                 completion)
                     _arguments \

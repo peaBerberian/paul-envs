@@ -20,7 +20,7 @@ _paulenvs()
     local run_flags="--help"
     local stop_flags="--help --engine --timeout"
     local kill_flags="--help --engine"
-    local version_flags="--help"
+    local version_flags="--help --short"
     local completion_values="bash zsh fish"
     local interactive_flags="--help"
 

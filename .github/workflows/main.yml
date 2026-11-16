@@ -72,6 +72,24 @@ jobs:
         run: |
           ./paul-envs
 
+      - name: Test version and short version output
+        shell: bash
+        run: |
+          # Short output must work with no container engine on PATH.
+          short_version=$(PATH="" ./paul-envs version --short 2> version-short.stderr)
+          [[ "$short_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test ! -s version-short.stderr
+
+          ./paul-envs version > version-full.txt
+          grep -Fx "paul-envs version $short_version" version-full.txt
+          grep -F "Container engine:" version-full.txt
+          grep -F "Container engine version:" version-full.txt
+
+          for flag in --help -h; do
+            ./paul-envs version "$flag" > version-help.txt
+            grep -F -- "--short" version-help.txt
+          done
+
       - name: Test help before and after positional arguments
         shell: bash
         run: |

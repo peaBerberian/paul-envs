@@ -19,6 +19,7 @@ func Version(ctx context.Context, args []string, console *console.Console) error
 	}
 
 	flagset := newCommandFlagSet("version", console)
+	short := flagset.Bool("short", false, "Print only the application version, without detecting the container engine.")
 	flagset.Usage = func() {
 		writeCommandUsage(
 			console,
@@ -32,6 +33,11 @@ func Version(ctx context.Context, args []string, console *console.Console) error
 			return nil
 		}
 		return err
+	}
+
+	if *short {
+		console.WriteLn("%s", versions.Version.ToString())
+		return nil
 	}
 
 	console.WriteLn("paul-envs version %d.%d.%d",
