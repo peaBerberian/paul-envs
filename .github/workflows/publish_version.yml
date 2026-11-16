@@ -50,13 +50,11 @@ jobs:
             exit 1
           fi
 
-      - name: Extract changelog for this version
+      - name: Extract Unreleased changelog
         id: changelog
         run: |
-          version="$GITHUB_REF_NAME"
-      
-          awk -v version="$version" '
-            $0 ~ "^## " version {found=1; next}
+          awk '
+            $1 == "##" && $2 == "Unreleased" {found=1; next}
             found && /^## / {exit}
             found
           ' CHANGELOG.md > CHANGELOG_LATEST.md
