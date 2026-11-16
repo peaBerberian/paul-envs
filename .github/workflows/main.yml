@@ -72,6 +72,18 @@ jobs:
         run: |
           ./paul-envs
 
+      - name: Test help before and after positional arguments
+        shell: bash
+        run: |
+          for command in build remove stop kill completion; do
+            for flag in --help -h; do
+              ./paul-envs "$command" "$flag" > help-before.txt
+              ./paul-envs "$command" unused "$flag" </dev/null > help-after.txt
+              grep -F "Usage: paul-envs $command " help-after.txt
+              diff -u help-before.txt help-after.txt
+            done
+          done
+
       - name: Test list (empty)
         shell: bash
         run: |
@@ -476,7 +488,12 @@ jobs:
         shell: bash
         run: |
           echo "Building minimal project for ${{ matrix.platform }}..."
-          ./paul-envs build --engine "$ENGINE" build-minimal
+          if [ "${{ matrix.arch }}" = amd64 ]; then
+            ./paul-envs build --no-cache --engine "$ENGINE" build-minimal </dev/null | tee build-minimal.log
+          else
+            ./paul-envs build build-minimal --no-cache --engine "$ENGINE" </dev/null | tee build-minimal.log
+          fi
+          grep -F 'Ignoring cached image layers for this build.' build-minimal.log
           echo "✓ Build completed successfully"
 
           echo "Verifying built image architecture..."
@@ -680,12 +697,12 @@ jobs:
                 test "$("$ENGINE" inspect --format '{{.State.ExitCode}}' "$LIFECYCLE_CONTAINER")" = 0
                 ;;
               kill)
-                timeout 30s ./paul-envs kill --engine "$ENGINE" build-minimal </dev/null
+                timeout 30s ./paul-envs kill build-minimal --engine "$ENGINE" </dev/null
                 test ! -f "$LIFECYCLE_DIR/term-$mode"
                 test "$("$ENGINE" inspect --format '{{.State.ExitCode}}' "$LIFECYCLE_CONTAINER")" = 137
                 ;;
               timeout)
-                timeout 30s ./paul-envs stop --engine "$ENGINE" --timeout 1 build-minimal </dev/null
+                timeout 30s ./paul-envs stop --engine "$ENGINE" build-minimal --timeout 1 </dev/null
                 test "$("$ENGINE" inspect --format '{{.State.ExitCode}}' "$LIFECYCLE_CONTAINER")" = 137
                 ;;
             esac
@@ -707,6 +724,21 @@ jobs:
             test "$(sha256sum "$PROJECTS_PATH/build-minimal/build.conf" "$PROJECTS_PATH/build-minimal/run.conf")" = "$CONFIG_BEFORE"
             echo "✓ $mode terminated the container and joined process without removing project data"
           done
+
+      - name: Test run preserves container command flags
+        shell: bash
+        run: |
+          timeout 30s ./paul-envs run --engine "$ENGINE" build-minimal bash -c '
+            set -eu
+            test "$#" -eq 5
+            test "$1" = --help
+            test "$2" = --engine
+            test "$3" = other
+            test "$4" = --
+            test "$5" = --no-cache
+            printf "container-arguments-preserved\n"
+          ' _ --help --engine other -- --no-cache </dev/null > run-arguments.log
+          grep -Fx 'container-arguments-preserved' run-arguments.log
 
       - name: Run minimal project (basic test)
         shell: bash
@@ -840,7 +872,7 @@ jobs:
         shell: bash
         run: |
           ./paul-envs create ./test-project --no-prompt --name forced-podman --shell bash
-          ./paul-envs build --engine podman forced-podman
+          ./paul-envs build forced-podman --engine podman
 
           grep '^CONTAINER_ENGINE=podman$' "$PROJECTS_PATH"/forced-podman/.paul-env/project.buildinfo
           podman image inspect paulenv:forced-podman >/dev/null
@@ -880,7 +912,7 @@ jobs:
           docker image inspect paulenv:explicit-remove >/dev/null
           podman image inspect paulenv:explicit-remove >/dev/null
 
-          ./paul-envs remove --no-prompt --engine docker explicit-remove
+          ./paul-envs remove explicit-remove --no-prompt --engine docker </dev/null
 
           test ! -d "$PROJECTS_PATH"/explicit-remove
           ! docker image inspect paulenv:explicit-remove >/dev/null 2>&1

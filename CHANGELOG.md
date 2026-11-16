@@ -11,6 +11,8 @@
 ### Bug fixes
 
 - Fix containers asking for a password at startup with Podman 6.2+.
+- Recognize flags after positional arguments in `build`, `remove`, `stop`, `kill`, and `completion`.
+- Reject extra project arguments to `build`.
 
 ## v0.8.1 (2026-10-02)
 

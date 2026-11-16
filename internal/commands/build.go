@@ -33,6 +33,9 @@ func Build(ctx context.Context, args []string, filestore *files.FileStore, conso
 		return err
 	}
 	args = flagset.Args()
+	if len(args) > 1 {
+		return fmt.Errorf("build accepts at most one project name; unexpected arguments: %q", args[1:])
+	}
 
 	selectedEngine, err := parseCommandEngineSelection(engineSelection)
 	if err != nil {

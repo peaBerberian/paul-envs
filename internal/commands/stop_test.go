@@ -25,9 +25,11 @@ func TestStopAndKillArguments(t *testing.T) {
 			{name: "extra project", args: []string{"alpha", "beta"}, want: "requires exactly one project name"},
 			{name: "invalid project", args: []string{"../alpha"}, want: "invalid project name"},
 			{name: "invalid engine", args: []string{"--engine", "all", "alpha"}, want: "invalid --engine value"},
+			{name: "invalid engine after project", args: []string{"alpha", "--engine", "all"}, want: "invalid --engine value"},
 			{name: "unknown flag", args: []string{"--unknown"}, want: "flag provided but not defined"},
 			{name: "long help", args: []string{"--help"}},
 			{name: "short help", args: []string{"-h"}},
+			{name: "help after project", args: []string{"alpha", "--help"}},
 		} {
 			t.Run(action+"/"+tt.name, func(t *testing.T) {
 				var out bytes.Buffer

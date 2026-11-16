@@ -12,6 +12,11 @@ import (
 	"github.com/peaberberian/paul-envs/internal/utils"
 )
 
+// Stop at the project name so the container command's flags pass through.
+func parseRunFlags(flagset *flag.FlagSet, args []string) error {
+	return flagset.Parse(args)
+}
+
 func Run(ctx context.Context, args []string, filestore *files.FileStore, console *console.Console) error {
 	select {
 	case <-ctx.Done():
@@ -30,7 +35,7 @@ func Run(ctx context.Context, args []string, filestore *files.FileStore, console
 			"Run a project container or join the already running one. If no project name is provided, paul-envs asks you to choose one.",
 		)
 	}
-	if err := parseCommandFlags(flagset, args); err != nil {
+	if err := parseRunFlags(flagset, args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
 		}

@@ -155,6 +155,30 @@ jobs:
           cp dist/paul-envs .
           mkdir -p test-project
 
+      - name: Test build flag errors and argument boundaries
+        shell: bash
+        run: |
+          expect_error() {
+            local expected="$1"
+            shift
+            if ./paul-envs "$@" </dev/null > argument-error.log 2>&1; then
+              echo "Unexpected success: $*"
+              exit 1
+            fi
+            grep -F -- "$expected" argument-error.log
+          }
+
+          expect_error 'at most one project name' build alpha beta
+          expect_error 'at most one project name' build alpha --no-cache beta
+          expect_error 'flag provided but not defined' build alpha --unknown
+          expect_error 'flag needs an argument' build alpha --engine
+          expect_error 'invalid boolean value' build alpha --no-cache=invalid
+          expect_error 'invalid --engine value "all"' build alpha --engine all
+          expect_error 'invalid --engine value "--"' build alpha --engine --
+          expect_error 'at most one project name' build alpha -- --no-cache
+          expect_error 'at most one project name' build alpha -- --help
+          expect_error "project 'missing-flags-project' not found" build --no-cache -- missing-flags-project
+
       - name: Test invalid package names
         shell: bash
         run: |
