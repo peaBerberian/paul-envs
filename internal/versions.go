@@ -6,8 +6,8 @@ import "github.com/peaberberian/paul-envs/internal/utils"
 // TODO: automatize
 var Version = utils.Version{
 	Major: 0,
-	Minor: 8,
-	Patch: 1,
+	Minor: 9,
+	Patch: 0,
 }
 
 // Version the Dockerfile and generated project files have as semver.
